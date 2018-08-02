@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+	<title>#s2ch Pidor Stats</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+  </head>
+
+  <body>
+
+
+    <div class="container">
+
+      <div class="starter-template">
+        <h1>Информация о сессии №<%= $game_session_number %></h1>
+
+
+
+
+
+ <h1>массив с вероятностями и модификаторами</h1>
+            <pre><%=JSON.pretty_generate($pidors) %></pre>
+
+
+<h1>Логи действий игроков</h1>
+ <pre>А хуй вам, памяти мало</pre>
+      </div>
+
+    </div><!-- /.container -->
+
+<script>
+(function() {
+    'use strict';
+    var data = JSON.parse(document.getElementsByTagName("pre")[1].textContent);
+    var dataArray = Object.keys(data).map(i => data[i]);
+    dataArray = dataArray.filter(dt => dt.active == true);
+    dataArray = dataArray.filter(dt => dt.pidor_status == false);
+    console.log(dataArray.length)
+
+    var fields = ['nick','chance']
+
+    var a = document.getElementsByTagName("pre")[0];
+    var t = document.createElement('table');
+    t.border = '1';
+
+    var tableBody = document.createElement('TBODY');
+    t.appendChild(tableBody);
+
+    var tr = document.createElement('TR');
+    tableBody.appendChild(tr);
+    var td = document.createElement('TD');
+    td.appendChild(document.createTextNode('nick'));
+    tr.appendChild(td);
+    td = document.createElement('TD');
+    td.appendChild(document.createTextNode('chance'));
+    tr.appendChild(td);
+
+    for (var i = 0; i < dataArray.length; i++) {
+        tr = document.createElement('TR');
+        tableBody.appendChild(tr);
+
+        for (var j = 0; j < fields.length; j++) {
+            td = document.createElement('TD');
+            td.appendChild(document.createTextNode(data[i][fields[j]]));
+            tr.appendChild(td);
+        }
+    }
+
+    a.appendChild(t);
+
+
+
+})();
+</script>
+
+  </body>
+
+</html>
+
