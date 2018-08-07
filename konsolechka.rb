@@ -40,7 +40,7 @@ class PidorApp < Sinatra::Application
     set :traps, false
   end
 
-  set :bind, '127.0.0.1'
+  set :bind, '0.0.0.0'
   set :port, 4567
   disable :raise_errors
   set :raise_errors, false
