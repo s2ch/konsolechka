@@ -375,22 +375,56 @@ k = Cinch::Bot.new do
 
   on(:message, /^!(?:google|g) (.+)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-
-      n = URI.encode(n)
-      resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
-      puts "https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off"
-      link_check = URI.decode(resp.dig('items', 0, 'link'))
-      puts URI.decode(resp.dig('items', 0, 'link'))
-      if (link_check.length>100)
-        link_final = "["+link_check.posyl_v_googl+"] "+link_check
+      if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
+         puts "Матч по нику\n"
+         nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
+         puts "Ник #{nick}\n"
+         if m.channel.users.map{|e|e[0].nick}.include?(nick)
+             to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
+             puts "To find #{to_find}\n"
+             to_find = URI.encode(to_find)
+             resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{to_find}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
+             link_check = URI.decode(resp.dig('items', 0, 'link'))
+             puts URI.decode(resp.dig('items', 0, 'link'))
+             if (link_check.length>100)
+                link_final = "["+link_check.posyl_v_googl+"] "+link_check
+             else
+                link_final = link_check
+             end
+             res = nick+ ": " + resp.dig('items', 0, 'title') + " - " + link_final
+             # out = URI::decode(URI::decode(res['url'].force_encoding("utf-8"))).gsub(/ /, "%20")
+             # m.reply "#{Sanitize.fragment(res['title'])}: #{out}"
+             m.reply res
+         else
+             n = URI.encode(n)
+             resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
+             link_check = URI.decode(resp.dig('items', 0, 'link'))
+             if (link_check.length>100)
+                link_final = "["+link_check.posyl_v_googl+"] "+link_check
+             else
+                link_final = link_check
+             end
+             res = link_final + ' - ' + resp.dig('items', 0, 'title')
+             m.reply res
+         end
       else
-        link_final = link_check
+         puts "Нет матча по нику\n"
+         n = URI.encode(n)
+         resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
+         puts "https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off"
+         link_check = URI.decode(resp.dig('items', 0, 'link'))
+         puts URI.decode(resp.dig('items', 0, 'link'))
+         if (link_check.length>100)
+            link_final = "["+link_check.posyl_v_googl+"] "+link_check
+         else
+            link_final = link_check
+         end
+         res = link_final + ' - ' + resp.dig('items', 0, 'title')
+         m.reply res
       end
-      res = link_final + ' - ' + resp.dig('items', 0, 'title')
-      m.reply res
     end
   end
-
+  
   on(:message, /^!(?:yandex|y) (.+)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
 
@@ -404,26 +438,70 @@ k = Cinch::Bot.new do
       a.keep_alive=false
       a.open_timeout=3
       a.read_timeout=4
-
-      a.get("http://yandex.ru/search/?text=#{n}")
-      m.reply "#{a.page.search('.serp-item__title > a')[0].text} - #{a.page.search('.serp-item__title > a')[0][:href]}"
+      if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
+         puts "Матч по нику\n"
+         nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
+         puts "Ник #{nick}\n"
+         if m.channel.users.map{|e|e[0].nick}.include?(nick)
+             to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
+             a.get("http://yandex.ru/search/?text=#{to_find}")
+             m.reply nick+ ": " + "#{a.page.search('.serp-item__title > a')[0].text} - #{a.page.search('.serp-item__title > a')[0][:href]}"
+         else
+             a.get("http://yandex.ru/search/?text=#{n}")
+             m.reply "#{a.page.search('.serp-item__title > a')[0].text} - #{a.page.search('.serp-item__title > a')[0][:href]}"
+         end
+      else
+         a.get("http://yandex.ru/search/?text=#{n}")
+         m.reply "#{a.page.search('.serp-item__title > a')[0].text} - #{a.page.search('.serp-item__title > a')[0][:href]}"
+      end
     end
   end
 
   on(:message, /^!ddg (.+)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-
-      query = URI.escape(n)
-      page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
-      link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
-      if (link_check.length>100)
-        result_url = "["+link_check.posyl_v_googl+"] "+link_check
+      if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
+         puts "Матч по нику\n"
+         nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
+         puts "Ник #{nick}\n"
+         if m.channel.users.map{|e|e[0].nick}.include?(nick)
+             to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
+             query = URI.escape(to_find)
+             page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
+             link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
+             if (link_check.length>100)
+               result_url = "["+link_check.posyl_v_googl+"] "+link_check
+             else
+               result_url = link_check
+             end
+             result_text = page.search('.results .web-result .result__a')[0].text
+             result = nick+ ": " + result_text  + ' - ' + result_url
+             m.reply result
+         else
+             query = URI.escape(n)
+             page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
+             link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
+             if (link_check.length>100)
+               result_url = "["+link_check.posyl_v_googl+"] "+link_check
+             else
+               result_url = link_check
+             end
+             result_text = page.search('.results .web-result .result__a')[0].text
+             result = result_url + ' - ' + result_text
+             m.reply result
+         end
       else
-        result_url = link_check
+         query = URI.escape(n)
+         page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
+         link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
+         if (link_check.length>100)
+            result_url = "["+link_check.posyl_v_googl+"] "+link_check
+         else
+            result_url = link_check
+         end
+         result_text = page.search('.results .web-result .result__a')[0].text
+         result = result_url + ' - ' + result_text
+         m.reply result
       end
-      result_text = page.search('.results .web-result .result__a')[0].text
-      result = result_url + ' - ' + result_text
-      m.reply result
     end
   end
 
