@@ -157,7 +157,7 @@ k = Cinch::Bot.new do
     @lentach = true
     @eval_allowed_users = %w[unaffiliated/your_freenode_host]
     @ignored_users = []
-    @ignored_nicks = %w[Maj_Petrenko Konsolechka Konsolechka LzheKonsolka yalb coinBot AnimeChan Qubick Sopel ChirnoBot]
+    @ignored_nicks = %w[Maj_Petrenko Konsolechka Konsolechka LzheKonsolka yalb coinBot AnimeChan Qubick Sopel ChirnoBot urp]
     $game_started = false
     # @tells ||= Hash.new{ |h, k| h[k] = [] }.merge JSON.parse(File.read('tells.txt'))
 
@@ -980,7 +980,7 @@ k = Cinch::Bot.new do
 
   on :connect do
 
-    @bots= ['AnimeChan','ChirnoBot','coinBot','Konsolechka','Maj_Petrenko','Qubick','Sopel','yalb','AnimeChan_','coinBot_','Konsolechka_','Maj_Petrenko_','Qubick_','Sopel_','yalb_']
+    @bots= ['AnimeChan','ChirnoBot','coinBot','Konsolechka','Maj_Petrenko','Qubick','Sopel','yalb','urp','AnimeChan_','coinBot_','Konsolechka_','Maj_Petrenko_','Qubick_','Sopel_','yalb_','urp_']
 
     #Загрузка состояний
 
