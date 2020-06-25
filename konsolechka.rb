@@ -1,11 +1,12 @@
 # coding: utf-8
 # frozen_string_literal: false
+gem 'json', '2.0.2'
+require 'json'
 
 require 'cinch'
 require 'pry'
 require 'geoip'
-require 'open-uri'
-require 'json'
+require 'open_uri_redirections'
 require 'open3'
 require 'htmlentities'
 require 'mechanize'
@@ -23,13 +24,59 @@ require 'yaml'
 require 'sinatra'
 require 'pp'
 require 'pry'
+require 'date'
 require 'awesome_print'
 require "google/cloud"
+require 'cgi'
 require "google/cloud/translate"
 include ActionView::Helpers::DateHelper
+include ActionView::Helpers::NumberHelper
 require "datagrid"
-require "pidfile"
+#require "pidfile"
 require 'memory_profiler'
+
+#PidFile.new(:piddir => '/var/run/konsolechka', :pidfile => "konsolechka.pid")
+
+
+#class PidorsGrid
+#  include Datagrid
+#
+#
+#  scope do
+#  $pidors[:id]
+#  end
+#
+#  #
+#  # Filters
+#  #
+#
+#  filter(:nick, :string, :multiple => ',')
+#  filter(:host, :string)
+#  filter(:pidor_status, :xboolean)
+#  column_names_filter(:header => "Extra Columns", checkboxes: true)
+#
+#  #
+#  # Columns
+#  #
+#
+#  column(:nick, :mandatory => true)
+#  column(:host, :mandatory => true)
+#  column(:pidor_status, :mandatory => true)
+#
+#
+#
+#
+#end
+#
+#class PidorsController < ApplicationController
+#
+#  def index
+#    @pidors_grid = PidorsGrid.new(params[:pidors_grid]) do |scope|
+#      scope.page(params[:page])
+#    end
+#  end
+#end
+#
 
 #Веб-сервер статистики игры в пидора
 class PidorApp < Sinatra::Application
@@ -62,11 +109,16 @@ class PidorApp < Sinatra::Application
 end
 
 
-
 I18n.default_locale =:ru
 I18n.locale = :ru
 
 #ОБЩИЕ МЕТОДЫ
+
+ $translate = Google::Cloud::Translate.new(
+    version: :v2,
+    project_id: "konsol-12345",
+    credentials: "/konsolechka/google-translate.json"
+    )
 
 
 $twitter_topics = ['your-twitter-id', 'пердолик', 'пердолики',  '2ch.hk', '@your-twitter-id', 'Пердолики']
@@ -114,15 +166,36 @@ Google::UrlShortener::Base.log = $stdout
 
 class String
   def zamena_mestoimeniy
-    self.gsub(/\bне нельзя\b/i, 'можноÜÜÜ').gsub(/\bне можно\b/i, 'нельзяÜÜÜ').gsub(/\bмне\b/, 'тебеÜÜÜ').gsub(/\bя\b/, 'тыÜÜÜ').gsub(/\bЯ\b/, 'ТыÜÜÜ').gsub(/\bмы\b/, 'выÜÜÜ').gsub(/\bМы\b/, 'ВыÜÜÜ').gsub(/\bменя\b/, 'тебяÜÜÜ').gsub(/\bМеня\b/, 'ТебяÜÜÜ').gsub(/\bнас\b/, 'васÜÜÜ').gsub(/\bНас\b/, 'ВасÜÜÜ').gsub(/\bмне\b/, 'тебеÜÜÜ').gsub(/\bМне\b/, 'ТебеÜÜÜ').gsub(/\bнам\b/, 'вамÜÜÜ').gsub(/\bНам\b/, 'ВамÜÜÜ').gsub(/\bмной\b/, 'тобойÜÜÜ').gsub(/\bМной\b/, 'ТобойÜÜÜ').gsub(/\bмой\b/, 'твойÜÜÜ').gsub(/\bМой\b/, 'ТвойÜÜÜ').gsub(/\bмоя\b/, 'твояÜÜÜ').gsub(/\bМоя\b/, 'ТвояÜÜÜ').gsub(/\bмое\b/, 'твоеÜÜÜ').gsub(/\bМое\b/, 'ТвоеÜÜÜ').gsub(/\bмоё\b/, 'твоёÜÜÜ').gsub(/\bМоё\b/, 'ТвоёÜÜÜ').gsub(/\bмои\b/, 'твоиÜÜÜ').gsub(/\bМои\b/, 'ТвоиÜÜÜ').gsub(/\bмоего\b/, 'твоегоÜÜÜ').gsub(/\bМоего\b/, 'ТвоегоÜÜÜ').gsub(/\bмоей\b/, 'твоейÜÜÜ').gsub(/\bМоей\b/, 'ТвоейÜÜÜ').gsub(/\bмоих\b/, 'твоихÜÜÜ').gsub(/\bМоих\b/, 'ТвоихÜÜÜ').gsub(/\bмоему\b/, 'твоемуÜÜÜ').gsub(/\bМоему\b/, 'ТвоемуÜÜÜ').gsub(/\bмою\b/, 'твоюÜÜÜ').gsub(/\bМою\b/, 'ТвоюÜÜÜ').gsub(/\bмоим\b/, 'твоимÜÜÜ').gsub(/\bМоим\b/, 'ТвоимÜÜÜ').gsub(/\bмоими\b/, 'твоимиÜÜÜ').gsub(/\bМоими\b/, 'ТвоимиÜÜÜ').gsub(/\bмоём\b/, 'твоёмÜÜÜ').gsub(/\bМоём\b/, 'ТвоёмÜÜÜ').gsub(/\bмоем\b/, 'твоемÜÜÜ').gsub(/\bМоем\b/, 'ТвоемÜÜÜ').gsub(/\bнаш\b/, 'вашÜÜÜ').gsub(/\bНаш\b/, 'ВашÜÜÜ').gsub(/\bнаша\b/, 'вашаÜÜÜ').gsub(/\bНаша\b/, 'ВашаÜÜÜ').gsub(/\bнаше\b/, 'вашеÜÜÜ').gsub(/\bНаше\b/, 'ВашеÜÜÜ').gsub(/\bнаши\b/, 'вашиÜÜÜ').gsub(/\bНаши\b/, 'ВашиÜÜÜ').gsub(/\bты\b/, 'яÜÜÜ').gsub(/\bТы\b/, 'ЯÜÜÜ').gsub(/\bвы\b/, 'мыÜÜÜ').gsub(/\bВы\b/, 'МыÜÜÜ').gsub(/\bтебя\b/, 'меняÜÜÜ').gsub(/\bТебя\b/, 'МеняÜÜÜ').gsub(/\bвас\b/, 'насÜÜÜ').gsub(/\bВас\b/, 'НасÜÜÜ').gsub(/\bтебе\b/, 'мнеÜÜÜ').gsub(/\bТебе\b/, 'МнеÜÜÜ').gsub(/\bвам\b/, 'намÜÜÜ').gsub(/\bВам\b/, 'НамÜÜÜ').gsub(/\bтобой\b/, 'мнойÜÜÜ').gsub(/\bТобой\b/, 'МнойÜÜÜ').gsub(/\bтвой\b/, 'мойÜÜÜ').gsub(/\bТвой\b/, 'МойÜÜÜ').gsub(/\bтвоя\b/, 'мояÜÜÜ').gsub(/\bТвоя\b/, 'МояÜÜÜ').gsub(/\bтвое\b/, 'моеÜÜÜ').gsub(/\bТвое\b/, 'МоеÜÜÜ').gsub(/\bтвоё\b/, 'моёÜÜÜ').gsub(/\bТвоё\b/, 'МоёÜÜÜ').gsub(/\bтвои\b/, 'моиÜÜÜ').gsub(/\bТвои\b/, 'МоиÜÜÜ').gsub(/\bтвоего\b/, 'моегоÜÜÜ').gsub(/\bТвоего\b/, 'МоегоÜÜÜ').gsub(/\bтвоей\b/, 'моейÜÜÜ').gsub(/\bТвоей\b/, 'МоейÜÜÜ').gsub(/\bтвоих\b/, 'моихÜÜÜ').gsub(/\bТвоих\b/, 'МоихÜÜÜ').gsub(/\bтвоему\b/, 'моемуÜÜÜ').gsub(/\bТвоему\b/, 'МоемуÜÜÜ').gsub(/\bтвою\b/, 'моюÜÜÜ').gsub(/\bТвою\b/, 'МоюÜÜÜ').gsub(/\bтвоим\b/, 'моимÜÜÜ').gsub(/\bТвоим\b/, 'МоимÜÜÜ').gsub(/\bтвоими\b/, 'моимиÜÜÜ').gsub(/\bТвоими\b/, 'МоимиÜÜÜ').gsub(/\bтвоём\b/, 'моёмÜÜÜ').gsub(/\bТвоём\b/, 'МоёмÜÜÜ').gsub(/\bтвоем\b/, 'моемÜÜÜ').gsub(/\bТвоем\b/, 'МоемÜÜÜ').gsub(/\bваш\b/, 'нашÜÜÜ').gsub(/\bВаш\b/, 'НашÜÜÜ').gsub(/\bваша\b/, 'нашаÜÜÜ').gsub(/\bВаша\b/, 'НашаÜÜÜ').gsub(/\bваше\b/, 'нашеÜÜÜ').gsub(/\bВаше\b/, 'НашеÜÜÜ').gsub(/\bваши\b/, 'нашиÜÜÜ').gsub(/\bВаши\b/, 'НашиÜÜÜ').gsub(/ÜÜÜ/, '')
+    self.strip.gsub(/\s+/,' ').gsub(/\bне нельзя\b/i, 'можноÜÜÜ').gsub(/\bне можно\b/i, 'нельзяÜÜÜ').gsub(/\bмне\b/, 'тебеÜÜÜ').gsub(/\bя\b/, 'тыÜÜÜ').gsub(/\bЯ\b/, 'ТыÜÜÜ').gsub(/\bмы\b/, 'выÜÜÜ').gsub(/\bМы\b/, 'ВыÜÜÜ').gsub(/\bменя\b/, 'тебяÜÜÜ').gsub(/\bМеня\b/, 'ТебяÜÜÜ').gsub(/\bнас\b/, 'васÜÜÜ').gsub(/\bНас\b/, 'ВасÜÜÜ').gsub(/\bмне\b/, 'тебеÜÜÜ').gsub(/\bМне\b/, 'ТебеÜÜÜ').gsub(/\bнам\b/, 'вамÜÜÜ').gsub(/\bНам\b/, 'ВамÜÜÜ').gsub(/\bмной\b/, 'тобойÜÜÜ').gsub(/\bМной\b/, 'ТобойÜÜÜ').gsub(/\bмой\b/, 'твойÜÜÜ').gsub(/\bМой\b/, 'ТвойÜÜÜ').gsub(/\bмоя\b/, 'твояÜÜÜ').gsub(/\bМоя\b/, 'ТвояÜÜÜ').gsub(/\bмое\b/, 'твоеÜÜÜ').gsub(/\bМое\b/, 'ТвоеÜÜÜ').gsub(/\bмоё\b/, 'твоёÜÜÜ').gsub(/\bМоё\b/, 'ТвоёÜÜÜ').gsub(/\bмои\b/, 'твоиÜÜÜ').gsub(/\bМои\b/, 'ТвоиÜÜÜ').gsub(/\bмоего\b/, 'твоегоÜÜÜ').gsub(/\bМоего\b/, 'ТвоегоÜÜÜ').gsub(/\bмоей\b/, 'твоейÜÜÜ').gsub(/\bМоей\b/, 'ТвоейÜÜÜ').gsub(/\bмоих\b/, 'твоихÜÜÜ').gsub(/\bМоих\b/, 'ТвоихÜÜÜ').gsub(/\bмоему\b/, 'твоемуÜÜÜ').gsub(/\bМоему\b/, 'ТвоемуÜÜÜ').gsub(/\bмою\b/, 'твоюÜÜÜ').gsub(/\bМою\b/, 'ТвоюÜÜÜ').gsub(/\bмоим\b/, 'твоимÜÜÜ').gsub(/\bМоим\b/, 'ТвоимÜÜÜ').gsub(/\bмоими\b/, 'твоимиÜÜÜ').gsub(/\bМоими\b/, 'ТвоимиÜÜÜ').gsub(/\bмоём\b/, 'твоёмÜÜÜ').gsub(/\bМоём\b/, 'ТвоёмÜÜÜ').gsub(/\bмоем\b/, 'твоемÜÜÜ').gsub(/\bМоем\b/, 'ТвоемÜÜÜ').gsub(/\bнаш\b/, 'вашÜÜÜ').gsub(/\bНаш\b/, 'ВашÜÜÜ').gsub(/\bнаша\b/, 'вашаÜÜÜ').gsub(/\bНаша\b/, 'ВашаÜÜÜ').gsub(/\bнаше\b/, 'вашеÜÜÜ').gsub(/\bНаше\b/, 'ВашеÜÜÜ').gsub(/\bнаши\b/, 'вашиÜÜÜ').gsub(/\bНаши\b/, 'ВашиÜÜÜ').gsub(/\bты\b/, 'яÜÜÜ').gsub(/\bТы\b/, 'ЯÜÜÜ').gsub(/\bвы\b/, 'мыÜÜÜ').gsub(/\bВы\b/, 'МыÜÜÜ').gsub(/\bтебя\b/, 'меняÜÜÜ').gsub(/\bТебя\b/, 'МеняÜÜÜ').gsub(/\bвас\b/, 'насÜÜÜ').gsub(/\bВас\b/, 'НасÜÜÜ').gsub(/\bтебе\b/, 'мнеÜÜÜ').gsub(/\bТебе\b/, 'МнеÜÜÜ').gsub(/\bвам\b/, 'намÜÜÜ').gsub(/\bВам\b/, 'НамÜÜÜ').gsub(/\bтобой\b/, 'мнойÜÜÜ').gsub(/\bТобой\b/, 'МнойÜÜÜ').gsub(/\bтвой\b/, 'мойÜÜÜ').gsub(/\bТвой\b/, 'МойÜÜÜ').gsub(/\bтвоя\b/, 'мояÜÜÜ').gsub(/\bТвоя\b/, 'МояÜÜÜ').gsub(/\bтвое\b/, 'моеÜÜÜ').gsub(/\bТвое\b/, 'МоеÜÜÜ').gsub(/\bтвоё\b/, 'моёÜÜÜ').gsub(/\bТвоё\b/, 'МоёÜÜÜ').gsub(/\bтвои\b/, 'моиÜÜÜ').gsub(/\bТвои\b/, 'МоиÜÜÜ').gsub(/\bтвоего\b/, 'моегоÜÜÜ').gsub(/\bТвоего\b/, 'МоегоÜÜÜ').gsub(/\bтвоей\b/, 'моейÜÜÜ').gsub(/\bТвоей\b/, 'МоейÜÜÜ').gsub(/\bтвоих\b/, 'моихÜÜÜ').gsub(/\bТвоих\b/, 'МоихÜÜÜ').gsub(/\bтвоему\b/, 'моемуÜÜÜ').gsub(/\bТвоему\b/, 'МоемуÜÜÜ').gsub(/\bтвою\b/, 'моюÜÜÜ').gsub(/\bТвою\b/, 'МоюÜÜÜ').gsub(/\bтвоим\b/, 'моимÜÜÜ').gsub(/\bТвоим\b/, 'МоимÜÜÜ').gsub(/\bтвоими\b/, 'моимиÜÜÜ').gsub(/\bТвоими\b/, 'МоимиÜÜÜ').gsub(/\bтвоём\b/, 'моёмÜÜÜ').gsub(/\bТвоём\b/, 'МоёмÜÜÜ').gsub(/\bтвоем\b/, 'моемÜÜÜ').gsub(/\bТвоем\b/, 'МоемÜÜÜ').gsub(/\bваш\b/, 'нашÜÜÜ').gsub(/\bВаш\b/, 'НашÜÜÜ').gsub(/\bваша\b/, 'нашаÜÜÜ').gsub(/\bВаша\b/, 'НашаÜÜÜ').gsub(/\bваше\b/, 'нашеÜÜÜ').gsub(/\bВаше\b/, 'НашеÜÜÜ').gsub(/\bваши\b/, 'нашиÜÜÜ').gsub(/\bВаши\b/, 'НашиÜÜÜ').gsub(/ÜÜÜ/, '').strip.gsub(/\s+/,' ').gsub(/\s+([,\.!])/,'\1').gsub(/([,\.!])(?![\s\d]+)(?![$\/])/,'\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
   end
+  
+  def kapitalizirovat_russky
+    self.strip.gsub(/\s+/,' ').gsub(/\s+([,\.!])/,'\1').gsub(/([,\.!])(?![\s\d]+)(?![$\/])/,'\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»').gsub(/^[а-я]/){|s| s[0].to_s.capitalize}
+  end
+  
+  def ubernation_days
+         if ((Time.new.wday == 3) && (Time.new.day <7))
+           puts "UA "+ self
+           translation = $translate.translate self, to: "uk"
+           CGI.unescapeHTML(translation.text).gsub(/ \.\.\./, '…')
+         elsif ((Time.new.wday == 4) && (Time.new.day <7))
+           puts "BE " + self
+           translation = $translate.translate self, to: "be"
+           CGI.unescapeHTML(translation.text).gsub(/ \.\.\./, '…')
+         else
+           puts "ELSE " + self
+           self.gsub(/\.\.\./, '…')
+         end   
+  end
+  
   def posyl_v_googl
     Google::UrlShortener.shorten!(self)
   end
   def ukorachivanie_ssylok
     self.gsub(/((?:http|https):\/\/\S+)/) do | link |
       if (link.length > 120)
-        "[#{link.posyl_v_googl}] #{link}"
+        #"[#{link.posyl_v_googl}] #{link}"
+        link
       else
         link
       end
@@ -142,9 +215,11 @@ k = Cinch::Bot.new do
   # binding.pry
   configure do |c|
     c.server = 'chat.freenode.net'
-    c.port = "8000"
+    c.port = "6697"
     c.channels = ['#konsolechka']
     c.nick = "Konsolka_oss"
+    c.ssl.use = true
+    c.ssl.verify = true
     c.user = "konsolka_oss"
     c.realname = "(\\/)"
     c.message_split_start = "…"
@@ -158,6 +233,7 @@ k = Cinch::Bot.new do
     @eval_allowed_users = %w[unaffiliated/your_freenode_host]
     @ignored_users = []
     @ignored_nicks = %w[Maj_Petrenko Konsolechka Konsolechka LzheKonsolka yalb coinBot AnimeChan Qubick Sopel ChirnoBot urp]
+    @vatniks = %w[]
     $game_started = false
     # @tells ||= Hash.new{ |h, k| h[k] = [] }.merge JSON.parse(File.read('tells.txt'))
 
@@ -194,22 +270,58 @@ k = Cinch::Bot.new do
       link_check = JSON.parse(
         open("https://www.googleapis.com/customsearch/v1?q=#{t}&cx=YOUR_CX_KEY&searchType=image&key=YOUR_KEY&num=1&safe=off").read
       ).dig('items', 0, 'link')
+      if (link_check.nil?)
+          
+        "К сожалению, по вашему запросу ничего не найдено!".ubernation_days
+      else
+           
+          link_result = URI(link_check)
+        
+          
+          link_check = link_result.scheme + "://" + SimpleIDN.to_unicode(link_result.host)
+          
+          if (!link_result.path.nil?)
+           link_check = link_check + CGI.unescape(link_result.path).gsub(/\s/,'%20')
+          end
+          
+          if (!link_result.query.nil?)
+             link_check = link_check + "?" + CGI.unescape(link_result.query).gsub(/\s/,'%20')
+          end
+          
+          if (!link_result.fragment.nil?)
+             link_check = link_check + "#" + CGI.unescape(link_result.fragment).gsub(/\s/,'%20')
+          end
+          
+          
+          
+          
+      
       if (link_check.length>100)
-        link_final = "["+link_check.posyl_v_googl+"] "+link_check
+        #link_final = "["+link_check.posyl_v_googl+"] "+link_check
+        link_final = link_check
       else
         link_final = link_check
       end
       link_final
     end
-
-    def praz
-      Nokogiri.parse(open('http://www.calend.ru/').read).search('.famous-date')[0].search('div > a').map(&:text)
     end
+    
+    def praz
+      praz_date= Time.now.to_s
+      praz_date = DateTime.parse(praz_date).strftime("%Y-%-m-%-d")
+      Nokogiri.parse(open('https://www.calend.ru/holidays/'+praz_date+'/').read).search('div.caption>span.title>a').map(&:text)
+    end
+    
+    def kmp
+      Nokogiri.parse(open('http://killpls.me/random/', :allow_redirections => :all).read).search('#stories')[0].search('div.row > div.col-xs-12').map(&:text)[0].strip.gsub(/\s+/, ' ').ubernation_days
+    end    
   end
 
-  on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*совет/i) do |m|
+	on(:message, /Консолька, дистрибутивы/){|m|a=Nokogiri.parse(open('https://distrowatch.com/').read);m.reply a.search('.phr2').first(10).zip(a.search('.phr3')).map{|e|"#{e[0].text.ubernation_days}: #{e[1].text.ubernation_days}"}.join("\n")}
+	
+	on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*совет/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-      m.reply HTMLEntities.new.decode(JSON.parse(open('http://fucking-great-advice.ru/api/random').read)['text']).gsub(/\sблять\s/, ', блять, ')
+      m.reply HTMLEntities.new.decode(JSON.parse(open('http://fucking-great-advice.ru/api/random').read)['text']).gsub(/\sблять\s/, ', блять, ').ubernation_days
     end
   end
 
@@ -243,10 +355,9 @@ k = Cinch::Bot.new do
 
       end
 
-      translate = Google::Cloud::Translate.new project: "yourprojectid-1234123", "keyfile": "/konsolechka/yourprojectidkey.json", "key": "YOUR_KEY"
-
-      translation = translate .translate n1, to: n2
-
+      translation = $translate.translate n1, to: n2
+      translation = CGI.unescapeHTML(translation.text).gsub(/ \.\.\./, '…')
+    
       m.reply ("#{translation}")
 
     end
@@ -254,15 +365,38 @@ k = Cinch::Bot.new do
 
 
 
-  on(:message, /^!gt (>[^>]+.*)/) do |m, n|
+  on(:message, /!gt (>[^>]+.*)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-      r = n.scan(/>[^>]+/); m.reply r.length > 3 ? 'Слишком много гринтекста!' : r.map { |e| "\00303#{e}" }.join("\n")
+      r = n.scan(/>[^>]+/)
+      if (r.length > 3) 
+       answ = 'Слишком много гринтекста!'.ubernation_days
+      else
+       answ = ""
+       unless r.empty?
+        r.map do |e|
+         answ = answ + "\00303"+e.ubernation_days.gsub(/> /, '>')+"\n"
+        end
+       end
+      end
+      m.reply answ
     end
   end
 
-  on(:message, /^!gty (>[^>]+.*)/) do |m, n|
+  on(:message, /!gty (>[^>]+.*)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-      r = n.scan(/>[^>]+/); m.reply r.length > 3 ? 'Слишком много гринтекста!' : (r.unshift">#{Time.now.year}" unless r.empty?; r).map { |e| "\00303#{e}" }.join("\n")
+      r = n.scan(/>[^>]+/);
+      if (r.length > 3)
+        answ= 'Слишком много гринтекста!'.ubernation_days
+      else
+       unless r.empty?
+        answ = "\00303>#{Time.now.year}\n"
+        r.map do |e|
+       
+         answ = answ + "\00303"+e.ubernation_days.gsub(/> /, '>')+"\n"
+        end
+       end
+      end
+      m.reply answ
     end
   end
 
@@ -279,50 +413,72 @@ k = Cinch::Bot.new do
   on(:message, /^.*ACTION погладил (?:Konsolech|Консол)(?:ь|еч|)(?:ka|ку).*/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       @gladit_variants = ['извернулась и цапнула пидора #NICKNAME# за руку!', 'заурчала', 'слегка мурлыкнула', 'отскочила и зашипела на #NICKNAME#', 'посмотрела на #NICKNAME# как на пустое место', 'свернулась в клубочек', 'продолжила хранить молчание', 'нажаловалась на домогательства мочератору']
-      m.action_reply(("#{@gladit_variants.sample}").gsub(/#NICKNAME#/, "#{m.user.nick}"))
+      m.action_reply(("#{@gladit_variants.sample.ubernation_days}").gsub(/#NICKNAME#/, "#{m.user.nick}"))
     end
   end
 
-  on(:message, /^!gi (.+)/) do |m, n|
+  on(:message, /!gi (.+)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-      m.reply gi(n)
+      if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
+        puts "Матч по нику\n"
+        nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
+        puts "Ник #{nick}\n"
+        if m.channel.users.map{|e|e[0].nick}.include?(nick)
+          to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
+          m.reply nick+ ": " + gi(to_find)
+        else
+          m.reply gi(n)
+        end
+      else
+        m.reply gi(n)
+      end
     end
   end
+
 
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), праздники/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-      m.reply praz
+      m.safe_reply praz.map{ |x| x.ubernation_days }
     end
   end
 
-  on(:message, /^!addotv (.+)/) do |_m, n|
-    unless @ignored_users.include?(_m.user.host) || @ignored_nicks.include?(_m.user.nick)
+# on(:message, /(?:!(?:kmp|кмп)|%(?:кмп|kmp))/i) do |m|
+#   unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
+#     m.reply kmp
+#   end
+# end
+
+  on(:message, /^!addotv (.+)/) do |m, n|
+    unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       @otv << n
+      m.channel.action('добавила!'.ubernation_days)
     end
   end
+
 
   on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), когда (.+)\?/i) do |m, _n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
 
       if ($no_highlight_nicks.include?(m.user.nick))
 
-        m.reply "#{(m.user.nick).dup.insert(1,"‍")}, #{@otv.sample}"
+        m.reply "#{(m.user.nick).dup.insert(1,"‍")}, #{@otv.sample.ubernation_days}"
       else
-        m.reply "#{m.user.nick}, #{@otv.sample}"
+        m.reply "#{m.user.nick}, #{@otv.sample.ubernation_days}"
       end
     end
   end
 
+
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s* найди (.+)/i) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if (user = User(n.strip)).unknown?
-        m.reply "404: юзер #{n} не найден)"
+        m.reply "404: юзер #{n} не найден)".ubernation_days
       else
         h = user.host.match?(/kiwiirc/i) ? user.host.match(/\d+\.\d+\.\d+\.\d+/)[0] : user.host
         h = h[/\d+-\d+-\d+-\d+/] ? h[/\d+-\d+-\d+-\d+/].tr('-', '.') : h
         db = SypexGeo::Database.new('./SxGeoCity.dat')
         location = db.query(h)
-        m.reply "#{location.country} :: #{location.city}"
+        m.reply "#{location.country} :: #{location.city}".ubernation_days
       end
     end
   end
@@ -332,16 +488,19 @@ k = Cinch::Bot.new do
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       twi_length = n.gsub(/(?:http|https):\/\/\S+/, '').gsub(/  /, ' ')
       if twi_length.length > 280
-        m.reply 'Слишком длинное сообщение (>280 символов). Вы ебанули ' + twi_length.length.to_s + ' символов. Укоротите ваше говно на '+(twi_length.length - 280).to_s + ' буков.'
+        final_answer = 'Слишком длинное сообщение (>280 символов). Вы ебанули ' + twi_length.length.to_s + ' символов. Укоротите ваше говно на '+(twi_length.length - 280).to_s + ' буков.'
+        m.reply final_answer.ubernation_days
       else
-        if n.match?(/^-r(\d{18})\s+/)
-          status_id = n.match(/^-r(\d{18})\s+/)[1]
-          status_text = n.match(/^-r\d{18}\s+(.+)/)[1]
-          $twi.update(status_text, in_reply_to_status_id: status_id)
-        else
-          $twi.update(n)
+        unless @vatniks.include?(m.user.nick)
+           if n.match?(/^-r(\d+)\s+/) || n.match?(/^-r\s*(\d+)\s+/)
+             status_id = n.match(/^-r\s*(\d+)\s+/)[1]
+             status_text = n.match(/^-r\s*\d+\s+(.+)/)[1]
+             $twi.update(status_text, in_reply_to_status_id: status_id,auto_populate_reply_metadata: "true")
+           else
+             $twi.update(n)
+           end
         end
-        m.channel.action 'твитнула!'
+        m.channel.action 'твитнула!'.ubernation_days
       end
     end
   end
@@ -363,7 +522,7 @@ k = Cinch::Bot.new do
 
   on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*историю/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-      m.reply @pornostories.sample
+      m.reply @pornostories.sample.ubernation_days
     end
   end
 
@@ -373,7 +532,7 @@ k = Cinch::Bot.new do
     User('NickServ').send("identify #{k.password}")
   end
 
-  on(:message, /^!(?:google|g) (.+)/) do |m, n|
+  on(:message, /(?:!(?:google|g)|%d) (.+)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
          puts "Матч по нику\n"
@@ -384,48 +543,128 @@ k = Cinch::Bot.new do
              puts "To find #{to_find}\n"
              to_find = URI.encode(to_find)
              resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{to_find}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
-             link_check = URI.decode(resp.dig('items', 0, 'link'))
-             puts URI.decode(resp.dig('items', 0, 'link'))
-             if (link_check.length>100)
-                link_final = "["+link_check.posyl_v_googl+"] "+link_check
-             else
-                link_final = link_check
-             end
-             res = nick+ ": " + resp.dig('items', 0, 'title') + " - " + link_final
-             # out = URI::decode(URI::decode(res['url'].force_encoding("utf-8"))).gsub(/ /, "%20")
-             # m.reply "#{Sanitize.fragment(res['title'])}: #{out}"
-             m.reply res
-         else
+          if (resp.dig('items', 0, 'link').nil?)
+          
+            m.reply ( nick+ ": " + "К сожалению, по вашему запросу ничего не найдено!".ubernation_days)
+            next
+          
+          end
+          link_result = URI(resp.dig('items', 0, 'link'))
+        
+          
+          link_check = link_result.scheme + "://" + SimpleIDN.to_unicode(link_result.host)
+          
+          if (!link_result.path.nil?)
+           link_check = link_check + CGI.unescape(link_result.path).gsub(/\s/,'%20')
+          end
+          
+          if (!link_result.query.nil?)
+             link_check = link_check + "?" + CGI.unescape(link_result.query).gsub(/\s/,'%20')
+          end
+          
+          if (!link_result.fragment.nil?)
+             link_check = link_check + "#" + CGI.unescape(link_result.fragment).gsub(/\s/,'%20')
+          end
+          
+          
+          #puts URI.decode(resp.dig('items', 0, 'link'))
+          
+          if (link_check.length>100)
+            #link_final = "["+link_check.posyl_v_googl+"] "+link_check
+            link_final = link_check
+          else
+            link_final = link_check
+          end
+          res = nick+ ": " + resp.dig('items', 0, 'title').ubernation_days + " - " + link_final
+          # out = URI::decode(URI::decode(res['url'].force_encoding("utf-8"))).gsub(/ /, "%20")
+          # m.reply "#{Sanitize.fragment(res['title'])}: #{out}"
+          m.reply res
+        else
              n = URI.encode(n)
              resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
-             link_check = URI.decode(resp.dig('items', 0, 'link'))
-             if (link_check.length>100)
-                link_final = "["+link_check.posyl_v_googl+"] "+link_check
-             else
-                link_final = link_check
-             end
-             res = link_final + ' - ' + resp.dig('items', 0, 'title')
-             m.reply res
-         end
+          if (resp.dig('items', 0, 'link').nil?)
+          
+            m.reply ("К сожалению, по вашему запросу ничего не найдено!".ubernation_days)
+            next
+          
+          end
+          
+          
+          link_result = URI(resp.dig('items', 0, 'link'))
+        
+          
+          link_check = link_result.scheme + "://" + SimpleIDN.to_unicode(link_result.host)
+          
+          if (!link_result.path.nil?)
+           link_check = link_check + CGI.unescape(link_result.path).gsub(/\s/,'%20')
+          end
+          
+          if (!link_result.query.nil?)
+             link_check = link_check + "?" + CGI.unescape(link_result.query).gsub(/\s/,'%20')
+          end
+          
+          if (!link_result.fragment.nil?)
+             link_check = link_check + "#" + CGI.unescape(link_result.fragment).gsub(/\s/,'%20')
+          end
+          
+          
+          puts URI.decode(resp.dig('items', 0, 'link'))
+          if (link_check.length>100)
+            #link_final = "["+link_check.posyl_v_googl+"] "+link_check
+            link_final = link_check
+          else
+            link_final = link_check
+          end
+          res = link_final + ' - ' + resp.dig('items', 0, 'title').ubernation_days
+          # out = URI::decode(URI::decode(res['url'].force_encoding("utf-8"))).gsub(/ /, "%20")
+          # m.reply "#{Sanitize.fragment(res['title'])}: #{out}"
+          m.reply res
+        end
       else
          puts "Нет матча по нику\n"
          n = URI.encode(n)
          resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
          puts "https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off"
-         link_check = URI.decode(resp.dig('items', 0, 'link'))
-         puts URI.decode(resp.dig('items', 0, 'link'))
-         if (link_check.length>100)
-            link_final = "["+link_check.posyl_v_googl+"] "+link_check
-         else
-            link_final = link_check
-         end
-         res = link_final + ' - ' + resp.dig('items', 0, 'title')
-         m.reply res
+          if (resp.dig('items', 0, 'link').nil?)
+          
+            m.reply ("К сожалению, по вашему запросу ничего не найдено!".ubernation_days)
+            next
+          
+          end
+          
+          link_result = URI(resp.dig('items', 0, 'link'))
+        
+          
+          link_check = link_result.scheme + "://" + SimpleIDN.to_unicode(link_result.host)
+          
+          if (!link_result.path.nil?)
+           link_check = link_check + CGI.unescape(link_result.path).gsub(/\s/,'%20')
+          end
+          
+          if (!link_result.query.nil?)
+             link_check = link_check + "?" + CGI.unescape(link_result.query).gsub(/\s/,'%20')
+          end
+          
+          if (!link_result.fragment.nil?)
+             link_check = link_check + "#" + CGI.unescape(link_result.fragment).gsub(/\s/,'%20')
+          end
+          
+          
+        if (link_check.length>100)
+          #link_final = "["+link_check.posyl_v_googl+"] "+link_check
+          link_final = link_check
+        else
+          link_final = link_check
+        end
+        res = link_final + ' - ' + resp.dig('items', 0, 'title').ubernation_days
+        # out = URI::decode(URI::decode(res['url'].force_encoding("utf-8"))).gsub(/ /, "%20")
+        # m.reply "#{Sanitize.fragment(res['title'])}: #{out}"
+        m.reply res    
       end
     end
   end
   
-  on(:message, /^!(?:yandex|y) (.+)/) do |m, n|
+  on(:message, /!(?:yandex|y) (.+)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
 
       a = Mechanize.new
@@ -438,26 +677,29 @@ k = Cinch::Bot.new do
       a.keep_alive=false
       a.open_timeout=3
       a.read_timeout=4
+      a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
+      
       if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
          puts "Матч по нику\n"
          nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
          puts "Ник #{nick}\n"
-         if m.channel.users.map{|e|e[0].nick}.include?(nick)
-             to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
-             a.get("http://yandex.ru/search/?text=#{to_find}")
-             m.reply nick+ ": " + "#{a.page.search('.serp-item__title > a')[0].text} - #{a.page.search('.serp-item__title > a')[0][:href]}"
-         else
-             a.get("http://yandex.ru/search/?text=#{n}")
-             m.reply "#{a.page.search('.serp-item__title > a')[0].text} - #{a.page.search('.serp-item__title > a')[0][:href]}"
-         end
+        if m.channel.users.map{|e|e[0].nick}.include?(nick)
+          to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
+          a.get("https://yandex.ru/search/?text=#{to_find}")
+          m.reply nick+ ": " + "#{a.page.search('.organic__title-wrapper > a')[0].text.ubernation_days} - #{a.page.search('.organic__title-wrapper > a')[0][:href]}"
+        else
+          a.get("https://yandex.ru/search/?text=#{n}")
+          m.reply "#{a.page.search('.organic__title-wrapper > a')[0].text.ubernation_days} - #{a.page.search('.organic__title-wrapper > a')[0][:href]}"
+        end
       else
-         a.get("http://yandex.ru/search/?text=#{n}")
-         m.reply "#{a.page.search('.serp-item__title > a')[0].text} - #{a.page.search('.serp-item__title > a')[0][:href]}"
+        a.get("https://yandex.ru/search/?text=#{n}")
+        m.reply "#{a.page.search('.organic__title-wrapper > a')[0].text.ubernation_days} - #{a.page.search('.organic__title-wrapper > a')[0][:href]}"
       end
+
     end
   end
 
-  on(:message, /^!ddg (.+)/) do |m, n|
+  on(:message, /!ddg (.+)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
          puts "Матч по нику\n"
@@ -469,24 +711,24 @@ k = Cinch::Bot.new do
              page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
              link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
              if (link_check.length>100)
-               result_url = "["+link_check.posyl_v_googl+"] "+link_check
+               result_url = link_check
              else
                result_url = link_check
              end
              result_text = page.search('.results .web-result .result__a')[0].text
-             result = nick+ ": " + result_text  + ' - ' + result_url
+             result = nick+ ": " + result_text.ubernation_days  + ' - ' + result_url
              m.reply result
          else
              query = URI.escape(n)
              page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
              link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
              if (link_check.length>100)
-               result_url = "["+link_check.posyl_v_googl+"] "+link_check
+               result_url = link_check
              else
                result_url = link_check
              end
              result_text = page.search('.results .web-result .result__a')[0].text
-             result = result_url + ' - ' + result_text
+             result = result_url + ' - ' + result_text.ubernation_days
              m.reply result
          end
       else
@@ -494,12 +736,12 @@ k = Cinch::Bot.new do
          page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
          link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
          if (link_check.length>100)
-            result_url = "["+link_check.posyl_v_googl+"] "+link_check
+            result_url = link_check
          else
             result_url = link_check
          end
          result_text = page.search('.results .web-result .result__a')[0].text
-         result = result_url + ' - ' + result_text
+         result = result_url + ' - ' + result_text.ubernation_days
          m.reply result
       end
     end
@@ -520,24 +762,24 @@ k = Cinch::Bot.new do
         nick = m.channel.users.to_a.sample[0].nick
         sosnuvshy = nick == k.nick ? nil : nick
         if ($no_highlight_nicks.include?(sosnuvshy))
-          sosnuvshy ? m.reply("#{(sosnuvshy).dup.insert(1,"‍")}, ты соснул!") : m.channel.action('соснула!')
+          sosnuvshy ? m.reply("#{(sosnuvshy).dup.insert(1,"‍")}, ты соснул!".ubernation_days) : m.channel.action('соснула!')
 
         else
-          sosnuvshy ? m.reply("#{sosnuvshy}, ты соснул!") : m.channel.action('соснула!')
+          sosnuvshy ? m.reply("#{sosnuvshy}, ты соснул!".ubernation_days) : m.channel.action('соснула!')
         end
 
       else
 
         if ($no_highlight_nicks.include?(nick))
 
-          m.reply("#{(nick).dup.insert(1,"‍")}#{rand > 0.5 ? ' ' : ' не '}соснул!")
+          m.reply("#{(nick).dup.insert(1,"‍")}#{rand > 0.5 ? ' ' : ' не '}соснул!".ubernation_days)
         else
-          m.reply("#{nick}#{rand > 0.5 ? ' ' : ' не '}соснул!")
+          m.reply("#{nick}#{rand > 0.5 ? ' ' : ' не '}соснул!".ubernation_days)
         end
       end
     end
     if @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-      m.reply('Ты соснул, мудила, ёпт!')
+      m.reply('Ты соснул, мудила, ёпт!'.ubernation_days)
     end
   end
 
@@ -545,7 +787,7 @@ k = Cinch::Bot.new do
     begin
       host = User(nick).host.match(/\d+\.\d+\.\d+\.\d+/)[0]
       c = GeoIP.new('GeoLiteCity.dat').country(host).country_code2
-      m.reply c == 'UA' ? "#{nick} хохол! Лови хохла!" : "#{nick} ни разу не хохол!"
+      m.reply c == 'UA' ? "#{nick} хохол! Лови хохла!".ubernation_days : "#{nick} ни разу не хохол!".ubernation_days
     rescue
     end
   end
@@ -567,7 +809,7 @@ k = Cinch::Bot.new do
           rescue
           end
         end.map { |u| u[0].nick }
-        m.reply hohols.empty? ? 'Хохлы не обнаружены!' : "Хохлы обнаружены: #{hohols.join(', ')}"
+        m.reply hohols.empty? ? 'Хохлы не обнаружены!'.ubernation_days : "Хохлы обнаружены: #{hohols.join(', ')}".ubernation_days
       else
         n=n.gsub(/ов$/,'ÜÜÜ').gsub(/ей$/,'ьÜÜÜ').gsub(/ев$/,'йÜÜÜ').gsub(/их$/,'ийÜÜÜ').gsub(/ек$/,'каÜÜÜ').gsub(/ак$/,'акаÜÜÜ').gsub(/ых$/,'ыеÜÜÜ').gsub(/ÜÜÜ/, '')
         random_search = []
@@ -589,7 +831,9 @@ k = Cinch::Bot.new do
         if (sklonen.empty?)
           sklonen=doc.search('В').map(&:text)
         end
-        m.reply random_search.empty? ? ("\00303"+sklonen[0].capitalize + ' не обнаружены!'+"\n") : ("\00303"+sklonen[0].capitalize.to_s + " обнаружены: #{random_search.join(', ')}"+"\n")
+        ans1 = sklonen[0].capitalize.to_s + ' не обнаружены!'
+        ans2 = sklonen[0].capitalize.to_s + " обнаружены: #{random_search.join(', ')}"
+        m.reply random_search.empty? ? ("\00303"+ans1.ubernation_days+"\n") : ("\00303"+ans2.ubernation_days+"\n")
       end
     end
   end
@@ -605,17 +849,17 @@ k = Cinch::Bot.new do
         rescue
         end
       end.map { |u| u[0].nick }
-      m.reply bulbs.empty? ? 'Бульбаши не обнаружены!' : "Бульбаши обнаружены: #{bulbs.join(', ')}"
+      m.reply bulbs.empty? ? 'Бульбаши не обнаружены!'.ubernation_days : "Бульбаши обнаружены: #{bulbs.join(', ')}".ubernation_days
     end
   end
 
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*(прекрати|перестань|завязывай|кончай|заканчивай|заебала|хватит)\s*(?:меня|мне)?\s*(хайлайтить|подсвечивать|дергать|мешать|упоминать)/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if ($no_highlight_nicks.include?(m.user.nick))
-        m.action_reply "и так старается не хайлайтить #{(m.user.nick).dup.insert(1,"‍")}"
+        m.action_reply "и так старается не хайлайтить #{(m.user.nick).dup.insert(1,"‍")}".ubernation_days
       else
         $no_highlight_nicks.push(m.user.nick) unless $no_highlight_nicks.include?(m.user.nick)
-        m.action_reply "больше не будет хайлайтить #{(m.user.nick).dup.insert(1,"‍")}"
+        m.action_reply "больше не будет хайлайтить #{(m.user.nick).dup.insert(1,"‍")}".ubernation_days
       end
     end
   end
@@ -624,9 +868,9 @@ k = Cinch::Bot.new do
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if ($no_highlight_nicks.include?(m.user.nick))
         $no_highlight_nicks.delete(m.user.nick)
-        m.action_reply "опять хайлайтит #{m.user.nick}"
+        m.action_reply "опять хайлайтит #{m.user.nick}".ubernation_days
       else
-        m.action_reply "и так хайлайтила #{m.user.nick}"
+        m.action_reply "и так хайлайтила #{m.user.nick}".ubernation_days
       end
     end
   end
@@ -641,7 +885,7 @@ k = Cinch::Bot.new do
         rescue
         end
       end.map { |u| u[0].nick }
-      m.reply country.empty? ? 'Не найдены!' : "#{n} найдены: #{country.join(', ')}"
+      m.reply country.empty? ? 'Не найдены!'.ubernation_days : "#{n}.kapitalizirovat_russky найдены: #{country.join(', ')}".ubernation_days
     end
   end
 
@@ -654,17 +898,23 @@ k = Cinch::Bot.new do
         rescue
         end
       end.map { |u| u[0].nick }
-      m.reply norus.empty? ? 'Нерусь не обнаружена!' : "Лови нерусь: #{norus.join(', ')}"
+      m.reply norus.empty? ? 'Нерусь не обнаружена!'.ubernation_days : "Лови нерусь: #{norus.join(', ')}".ubernation_days
     end
   end
 
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*накатим/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       [3, 2, 1].each { |e| m.reply "#{e}..."; sleep 2 }
-      m.reply 'НАКАТИМ!'
+      m.reply 'НАКАТИМ!'.ubernation_days
     end
   end
 
+  on(:message, /(Слава Україні|Слава Украине)/i) do |m|
+    unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
+      m.reply 'Героям слава!'
+    end
+  end
+  
   on(:message, /!донгер/) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       @dongers ||= File.readlines 'dongers.txt'; m.reply @dongers.sample.strip
@@ -676,19 +926,19 @@ k = Cinch::Bot.new do
       @check = Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5
       if @check
         if @last_match[2] == @check
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "И #{a1} - тоже #{@last_match[0]}!" : "И #{a1} - однозначно #{@last_match[0]}!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "И #{a1} - тоже #{@last_match[0]}!" : "И #{a1} - однозначно #{@last_match[0]}!").zamena_mestoimeniy.ubernation_days)
         elsif @last_match[2] == 'ili'
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "Можно и #{a1}!" : "ЯÜÜÜ думаю, #{a1} тоже хорошо!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "Можно и #{a1}!" : "ЯÜÜÜ думаю, #{a1} тоже хорошо!").zamena_mestoimeniy.ubernation_days)
         else
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "A #{a1} - #{@last_match[0]}!" : "А вот #{a1} - #{@last_match[0]}!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "A #{a1} - #{@last_match[0]}!" : "А вот #{a1} - #{@last_match[0]}!").zamena_mestoimeniy.ubernation_days)
         end
       else
         if @last_match[2] == @check
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "И #{a1} - не #{@last_match[0]}!" : "И #{a1} - совсем не #{@last_match[0]}!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "И #{a1} - не #{@last_match[0]}!" : "И #{a1} - совсем не #{@last_match[0]}!").zamena_mestoimeniy.ubernation_days)
         elsif @last_match[2] == 'ili'
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "А вот #{a1} - не стоит!" : "А #{a1} - не нужно!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "А вот #{a1} - не стоит!" : "А #{a1} - не нужно!").zamena_mestoimeniy.ubernation_days)
         else
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "А #{a1} - не #{@last_match[0]}!" : "А #{a1} - совершенно не #{@last_match[0]}!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "А #{a1} - не #{@last_match[0]}!" : "А #{a1} - совершенно не #{@last_match[0]}!").zamena_mestoimeniy.ubernation_days)
         end
       end
       @last_match[2] = @check
@@ -706,24 +956,51 @@ k = Cinch::Bot.new do
       @check = Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5
       if @check
         if @last_match[2] == @check
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "#{nash_variant} - тоже #{@last_match[0]}!" : "#{nash_variant} - однозначно #{@last_match[0]}!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "#{nash_variant} - тоже #{@last_match[0]}!" : "#{nash_variant} - однозначно #{@last_match[0]}!").zamena_mestoimeniy.kapitalizirovat_russky.ubernation_days)
         elsif @last_match[2] == 'ili'
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "Можно и #{nash_variant}!" : "ЯÜÜÜ думаю, #{nash_variant} тоже хорошо!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "Можно и #{nash_variant}!" : "ЯÜÜÜ думаю, #{nash_variant} тоже хорошо!").zamena_mestoimeniy.ubernation_days)
         else
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "A #{nash_variant} - #{@last_match[0]}!" : "А вот #{nash_variant} - #{@last_match[0]}!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "A #{nash_variant} - #{@last_match[0]}!" : "А вот #{nash_variant} - #{@last_match[0]}!").zamena_mestoimeniy.ubernation_days)
         end
       else
         if @last_match[2] == @check
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "И #{nash_variant} - не #{@last_match[0]}!" : "И #{nash_variant} - совсем не #{@last_match[0]}!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "И #{nash_variant} - не #{@last_match[0]}!" : "И #{nash_variant} - совсем не #{@last_match[0]}!").zamena_mestoimeniy.ubernation_days)
         elsif @last_match[2] == 'ili'
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "Ну #{nash_variant} - точно не стоит!" : "Вот #{nash_variant} - однозначно не нужно!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "Ну #{nash_variant} - точно не стоит!" : "Вот #{nash_variant} - однозначно не нужно!").zamena_mestoimeniy.ubernation_days)
         else
-          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "#{nash_variant} - не #{@last_match[0]}!" : "#{nash_variant} - совершенно не #{@last_match[0]}!").zamena_mestoimeniy)
+          m.safe_reply((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "#{nash_variant} - не #{@last_match[0]}!" : "#{nash_variant} - совершенно не #{@last_match[0]}!").zamena_mestoimeniy.kapitalizirovat_russky.ubernation_days)
         end
       end
       @last_match[2] = @check
     end
   end
+  
+  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка),.+(?:выбери|выбрать|посоветуй|дай совет).+:(.+(?:(,|или)).+)+(\?|\!|\.)[^\s]*/i do |m, a1|
+    unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
+      a1.gsub!(' или ', ',')
+      our_answer_array=[]
+      if (Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+a1).to_i(16)).to_f).rand > 0.85)
+        our_source_array=a1.split(/,/).map(&:strip)
+        our_answer_array.push(our_source_array.delete_at(Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+a1).to_i(16)).to_f).rand(our_source_array.count)))
+        our_answer_array.push(our_source_array.delete_at(Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+a1).to_i(16)).to_f).rand(our_source_array.count)))
+        answers = ['Конечно же', 'Мне кажется,', 'Я считаю,']
+        answers2 = ['или', 'ну или']
+        answers3 = ['!', '.','...']
+        final_answer = "#{answers.sample} " + (our_answer_array[0]).to_s.zamena_mestoimeniy + " #{answers2.sample} " + (our_answer_array[1]).to_s.zamena_mestoimeniy + "#{answers3.sample}"
+        m.safe_reply (final_answer.ubernation_days)
+        
+      else
+        our_source_array=a1.split(/,/).map(&:strip)
+        our_answer_array.push(our_source_array.delete_at(Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+a1).to_i(16)).to_f).rand(our_source_array.count)))
+        answers = ['Конечно же', 'Мне кажется,', 'Я считаю,']
+        answers2 = ['!', '.','...']
+        final_answer = "#{answers.sample} " + (our_answer_array[0]).to_s.zamena_mestoimeniy  + "#{answers2.sample}"
+        m.safe_reply (final_answer.ubernation_days)
+      end
+    end
+  end
+
+
 
 
 
@@ -731,12 +1008,13 @@ k = Cinch::Bot.new do
   on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*(.+) ли (.+)\?[^\s]*/i do |m, a1, a2|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || a1.match?(/(^ ?| )а( | ?$)/) || a2.match?(/(^ ?| )или( | ?$)/)
       if a2[/^вы$/i]
-        m.safe_reply('Кто "вы", блять? Я здесь одна, нахуй!')
+        m.safe_reply('Кто "вы", блять? Я здесь одна, нахуй!').kapitalizirovat_russky.ubernation_days
         return
       end
       @check = Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5
       @last_match = [a1, a2, @check]
-      m.safe_reply("#{@last_match[1]}#{@check ? ' ' : [' не ', ' ни разу не '].sample}#{@last_match[0]}".zamena_mestoimeniy)
+      final_answer = "#{@last_match[1]}#{@check ? ' ' : [' не ', ' ни разу не '].sample}#{@last_match[0]}".zamena_mestoimeniy.kapitalizirovat_russky
+      m.safe_reply(final_answer.ubernation_days)
     end
   end
 
@@ -746,11 +1024,14 @@ k = Cinch::Bot.new do
       answers = ['Конечно же', 'Мне кажется,', 'Я считаю,']
       ili_rand = Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand
       if ili_rand < 0.1
-        m.safe_reply("#{answers.sample} " + (Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "ни #{a1}, ни тем более не #{a2}!" : "не #{a1} и не #{a2}!").zamena_mestoimeniy)
+        final_answer = "#{answers.sample} " + (Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "ни #{a1}, ни тем более не #{a2}!" : "не #{a1} и не #{a2}!").zamena_mestoimeniy
+        m.safe_reply(final_answer.ubernation_days)
       elsif ili_rand >= 0.1 && ili_rand < 0.9
-        m.safe_reply ("#{answers.sample} " + ((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? a1 : a2)).to_s.zamena_mestoimeniy)
+        final_answer = "#{answers.sample} " + ((Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? a1 : a2)).to_s.zamena_mestoimeniy
+        m.safe_reply (final_answer.ubernation_days)
       else
-        m.safe_reply("#{answers.sample} " + (Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "#{a1} и #{a2}!" : "и #{a1} и #{a2}!").zamena_mestoimeniy)
+        final_answer = "#{answers.sample} " + (Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "#{a1} и #{a2}!" : "и #{a1} и #{a2}!").zamena_mestoimeniy.kapitalizirovat_russky
+        m.safe_reply(final_answer.ubernation_days)
       end
     end
   end
@@ -761,9 +1042,11 @@ k = Cinch::Bot.new do
       answers = ['Конечно же', 'Мне кажется,', 'Я считаю,']
       ili_rand = Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand
       if ili_rand < 0.333333
-        m.safe_reply ("#{answers.sample} " + (a2).to_s.zamena_mestoimeniy)
+        final_answer = "#{answers.sample} " + (a2).to_s.zamena_mestoimeniy
+        m.safe_reply (final_answer.ubernation_days)
       else
-        m.safe_reply("#{answers.sample} " + (Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "#{a1main} - #{a1}!" : "#{a1main} не #{a1}!").zamena_mestoimeniy)
+        final_answer = "#{answers.sample} " + (Random.new((Digest::MD5.hexdigest(Time.now.strftime("%d/%m/%Y")+m.user.nick+m.message).to_i(16)).to_f).rand > 0.5 ? "#{a1main} - #{a1}!" : "#{a1main} не #{a1}!").zamena_mestoimeniy
+        m.safe_reply(final_answer.ubernation_days)
       end
     end
   end
@@ -776,10 +1059,10 @@ k = Cinch::Bot.new do
       link = "http://imdb.com#{link.strip}"
       if ($no_highlight_nicks.include?(m.user.nick))
 
-        m.reply "#{(m.user.nick).dup.insert(1,"‍")}, #{title} - #{link}"
+        m.reply "#{(m.user.nick).dup.insert(1,"‍")}, #{title.ubernation_days} - #{link}"
 
       else
-        m.reply "#{m.user.nick}, #{title} - #{link}"
+        m.reply "#{m.user.nick}, #{title.ubernation_days} - #{link}"
       end
 
     end
@@ -790,16 +1073,15 @@ k = Cinch::Bot.new do
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
 
       MemoryProfiler.start
-      m.reply "Консолечка профилирует!"
+      m.reply "Консолечка профилирует!".ubernation_days
     end
   end
-
 
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*сохрани отчёт/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       report = MemoryProfiler.stop
       report.pretty_print(to_file: "/konsolechka/memory-report-#{Time.now.strftime('%d.%m.%Y.%m.%d-%H-%M')}.log")
-      m.reply "Консолечка сохранила репорт!"
+      m.reply "Консолечка сохранила репорт!".ubernation_days
     end
   end
 
@@ -807,7 +1089,13 @@ k = Cinch::Bot.new do
 
   on :message, /((?:http|https):\/\/\S+)/i do |m, n|
     break unless m.channel
-    unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
+    if n.match?(/.*2ch.*news\/res\/.*/i)
+      @megumin_variants = ['Megumin, кончай бездельничать!', 'Megumin, съезжай от мамки!', 'Megumin, найди работу!', 'Megumin, стань самостоятельным!']
+
+      m.safe_reply ("#{@megumin_variants.sample}".ubernation_days)
+    end
+    unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) ||(n.include? "chlor.ga") || n.match?(/.*2ch.*news\/res\/.*/i)
+
 
       url = Addressable::URI.parse(n)
       url.host = SimpleIDN.to_ascii(url.host)
@@ -835,21 +1123,89 @@ k = Cinch::Bot.new do
         ActionView::Base.new
         title = ''
         if resp.instance_of?(Mechanize::File)
-          title << "File (#{ActionView::Base.new.number_to_human_size(resp.response['content-length'])})"
+          title << "Файл (#{ActionView::Base.new.number_to_human_size(resp.response['content-length']).gsub(/\bКБ\b/,'КиБ').gsub(/\bМБ\b/,'МиБ')})"
         else
           dims = FastImage.size(resp.uri.to_s)
           type = resp.response['content-type'].match(/\/(\w+)/)[1]
-          length = ActionView::Base.new.number_to_human_size(resp.response['content-length'])
-          title << "Image (#{length}, #{dims[0]}x#{dims[1]}, #{type})"
+          #length = ActionView::Base.new.number_to_human_size(resp.response['content-length'])
+          length = ActionView::Base.new.number_to_human_size(FastImage.new(resp.uri.to_s).content_length).gsub(/\bКБ\b/,'КиБ').gsub(/\bМБ\b/,'МиБ')
+          title << "Изображение (#{length}, #{dims[0]}×#{dims[1]}, #{type})"
         end
-        m.safe_reply title
+        m.safe_reply title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').strip.ubernation_days
       else
         agent.get url.to_s
         title = agent.page.search('title')[0].text
-        if agent.page.uri.to_s.match?(/youtube\.com\/watch/)
-          title << " (#{agent.page.search('.watch-view-count').text.gsub(/ views/, '')} views)"
+        if agent.page.uri.to_s.match?(/youtube\.com\/watch/) ||  agent.page.uri.to_s.match?(/youtu\.be/)
+          view_count = agent.page.search('.watch-view-count').text.gsub(/ views/, '')
+          watcher_live_names = ['зрителей', 'зритель', 'зрителя']
+          watcher_names = ['просмотров', 'просмотр', 'просмотра']
+          
+          
+          if view_count.empty?
+             view_count = agent.page.search("script").text.scan(/videoViewCountRenderer":{"viewCount":{"simpleText":"([0-9\.,\ ]+) views"}/im)[0][0].tr('^0-9', '').to_i
+          end
+             
+             
+          if view_count.empty?
+             view_count_num = agent.page.search("script").text.scan(/viewCount\\":\{\\"runs\\":\[\{\\"text\\":\\"([0-9\.,\ ]+) watching now\\"\}/im)[0][0].tr('^0-9', '').to_i
+                
+             w_index = view_count_num % 100
+             
+             if (w_index >=11 && w_index <= 14)
+               a_index = 0
+             else
+               if ((w_index % 10) < 5)
+                 if ((w_index % 10) >2)
+                  a_index = 2
+                 else
+                  a_index= w_index % 10
+                 end
+               else
+                 a_index=0
+               end
+            
+             end
+             
+             view_count_str =  number_with_delimiter(view_count_num, delimiter: ",")
+             watcher_live_name = watcher_live_names[a_index]
+             
+             title = title.ubernation_days + " " + "(#{view_count_str} #{watcher_live_name})".ubernation_days
+             
+          else
+             view_count_num = view_count.tr('^0-9', '').to_i
+             
+                
+             w_index = view_count_num % 100
+             
+             if (w_index >=11 && w_index <= 14)
+               a_index = 0
+             else
+               if ((w_index % 10) < 5)
+                 if ((w_index % 10) >2)
+                  a_index = 2
+                 else
+                  a_index= w_index % 10
+                 end
+               else
+                 a_index=0
+               end
+            
+             end
+             
+             view_count_str =  number_with_delimiter(view_count_num, delimiter: ",")
+             
+             watcher_name = watcher_names[a_index]
+             
+             title = title.ubernation_days + " " + "(#{view_count_str} #{watcher_name})".ubernation_days
+          end
+          
         end
-        m.safe_reply title.gsub(/\r\n/, ' ').tr("\n", ' ').strip
+        safe_title = title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').strip
+        if safe_title.length > 400
+          m.safe_reply safe_title.slice(0, 400)
+        else
+          m.safe_reply safe_title
+        end
       end
     end
   end
@@ -862,7 +1218,7 @@ k = Cinch::Bot.new do
     u = User.first_or_create(name: name)
     mes = Message.create(text: msg, user: u, channel: channel)
     if mes.id.to_s.chars.uniq.length == 1
-      m.channel.action "поздравила #{m.user.nick} с гетом (сообщение №#{mes.id})!"
+      m.channel.action "поздравила #{m.user.nick} с гетом (сообщение №#{mes.id})!".ubernation_days
     end
   end
 
@@ -880,22 +1236,20 @@ k = Cinch::Bot.new do
       if ($no_highlight_nicks.include?(nick))
 
 
-        Channel('#konsolechka').send "#{(nick).dup.insert(1,"‍")} is using #{version}"
+        Channel('#konsolechka').send "#{(nick).dup.insert(1,"‍")} использует #{version}".gsub(/[^[:print:]]/i, '').ubernation_days
       else
-        Channel('#konsolechka').send "#{nick} is using #{version}"
+        Channel('#konsolechka').send "#{nick} использует #{version}".gsub(/[^[:print:]]/i, '').ubernation_days
       end
 
       @replied = true
     end
   end
 
-
   on :message, /^!лгбт (.+)/ do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
 
       c = [5, 4, 8, 3, 2, 6].cycle
-
-      result = n.chars.map do |e|
+      result = n.ubernation_days.chars.map do |e|
         if e.match?(/^\s+$/)
           "\017#{e.center(3)}"
         else
@@ -914,10 +1268,10 @@ k = Cinch::Bot.new do
         if m.channel.users.map{|e|e[0].nick}.include?(n)
           if ($no_highlight_nicks.include?(m.user.nick))
 
-            m.reply("#{(m.user.nick).dup.insert(1,"‍")}, в шары долбишься?")
+            m.reply("#{(m.user.nick).dup.insert(1,"‍")}, в шары долбишься?".ubernation_days)
 
           else
-            m.reply("#{m.user.nick}, в шары долбишься?")
+            m.reply("#{m.user.nick}, в шары долбишься?".ubernation_days)
           end
 
         else
@@ -925,10 +1279,10 @@ k = Cinch::Bot.new do
             if ($no_highlight_nicks.include?(m.user.nick))
 
 
-              m.reply("#{(m.user.nick).dup.insert(1,"‍")}, лимит сообщений (5) достигнут.")
+              m.reply("#{(m.user.nick).dup.insert(1,"‍")}, лимит сообщений (5) достигнут.".ubernation_days)
 
             else
-              m.reply("#{m.user.nick}, лимит сообщений (5) достигнут.")
+              m.reply("#{m.user.nick}, лимит сообщений (5) достигнут.".ubernation_days)
             end
 
 
@@ -941,9 +1295,9 @@ k = Cinch::Bot.new do
       else
         if ($no_highlight_nicks.include?(m.user.nick))
 
-          m.reply("#{(m.user.nick).dup.insert(1,"‍")} у тебя хуйня вместо ника.")
+          m.reply("#{(m.user.nick).dup.insert(1,"‍")} у тебя хуйня вместо ника.".ubernation_days)
         else
-          m.reply("#{m.user.nick} у тебя хуйня вместо ника.")
+          m.reply("#{m.user.nick} у тебя хуйня вместо ника.".ubernation_days)
         end
 
       end
@@ -960,7 +1314,7 @@ k = Cinch::Bot.new do
     end
   end
 
-  on(:message,/^\?([[:alnum:]]+)ша/i){|m,n|@ysh||={};(y=@ysh["#{n}"])&.send(:[],0)&.send(:>,Time.now-3600) && m.reply("#{n}ша этого часа -- #{y[1]}") or (m.reply("И #{n}шей этого часа становится…"); sleep 3; @ysh[n]=[Time.now,(z=Channel("#konsolechka").users.map{|u|u[0].nick}.sample)];m.reply("#{z}! Поздравляем!"))}
+  on(:message,/^\?([[:alnum:]]+)ша/i){|m,n|@ysh||={};(y=@ysh["#{n}"])&.send(:[],0)&.send(:>,Time.now-3600) && m.reply("#{n}ша этого часа -- #{y[1]}".ubernation_days) or (m.reply("И #{n}шей этого часа становится…".ubernation_days); sleep 3; @ysh[n]=[Time.now,(z=Channel("#s2ch").users.map{|u|u[0].nick}.sample)];m.reply("#{z}! Поздравляем!".ubernation_days))}
 
 
   on :join do |m|
@@ -1140,12 +1494,12 @@ k = Cinch::Bot.new do
           $game_ending_started=Time.now
           $game_started=false
           if ($no_highlight_nicks.include?($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]))
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!"
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!".ubernation_days
 
 
 
           else
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!"
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!".ubernation_days
 
 
           end
@@ -1209,10 +1563,10 @@ k = Cinch::Bot.new do
   on(:message, /!правила/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || @bots.include?(m.user.nick)
       if (!$debug_mode)
-        m.reply "Режим показа коэффициентов и вероятностей активирован"
+        m.reply "Режим показа коэффициентов и вероятностей активирован".ubernation_days
         $debug_mode=true
       else
-        m.reply "Режим показа коэффициентов и вероятностей отключен"
+        m.reply "Режим показа коэффициентов и вероятностей отключен".ubernation_days
         $debug_mode=false
       end
     end
@@ -1220,8 +1574,10 @@ k = Cinch::Bot.new do
 
   on(:message, /!пидор/i) do |m|
     break if @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
+      m.reply "Игра про пидоров в данный момент сломана, приносим наши извинения!".ubernation_days
+      next
     if ($game_ending)
-      m.reply "Игра про пидоров в данный момент завершается, пожалуйста подождите #{(60-(Time.now-$game_ending_started)).ceil} сек."
+      m.reply "Игра про пидоров в данный момент завершается, пожалуйста подождите #{(60-(Time.now-$game_ending_started)).ceil} сек.".ubernation_days
 
       if (Channel('#konsolechka').voiced.count<10)
         sleep 15
@@ -1266,17 +1622,17 @@ k = Cinch::Bot.new do
         end
 
         if ($prev_winner)
-          m.reply "Всё о победителях прошлых раундов - https://your-domain.ga/pidor/ !"
+          m.reply "Всё о победителях прошлых раундов - https://your-domain.ga/pidor/ !".ubernation_days
         end
-        m.reply 'И новым главпидором становится...'
+        m.reply 'И новым главпидором становится...'.ubernation_days
         sleep 3
 
         User('ChanServ').send("VOICE #konsolechka #{$first_pidor_data&.nick}")
 
         if ($no_highlight_nicks.include?($first_pidor_data&.nick))
-          m.reply "#{($first_pidor_data&.nick).dup.insert(1,"‍")}! Поздравляем! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+          m.reply "#{($first_pidor_data&.nick).dup.insert(1,"‍")}! Поздравляем! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
         else
-          m.reply "#{$first_pidor_data&.nick}! Поздравляем! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+          m.reply "#{$first_pidor_data&.nick}! Поздравляем! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
         end
         $first_pidor={:nick=>$first_pidor_data&.nick,:date=>Time.now.strftime("%d.%m.%Y %H:%M")}
         $pidor_time=Time.now.to_i
@@ -1324,7 +1680,7 @@ k = Cinch::Bot.new do
               end
             end
             victory_chance = (victory_chance/100).ceil
-            User(m.user.nick).send("Шанс снять статус пидора rand(1..#{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count})==#{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}: #{victory_chance}%",true)
+            User(m.user.nick).send("Шанс снять статус пидора rand(1..#{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count})==#{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}: #{victory_chance}%".ubernation_days,true)
           end
           if ((rand(1..($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count))==$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count) && $pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:active])
 
@@ -1332,10 +1688,10 @@ k = Cinch::Bot.new do
             $pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:pidor_status]=false
 
             if ($no_highlight_nicks.include?(m.user.nick))
-              m.reply "Волею судеб, статус зашкваренного пидора был снят с #{(m.user.nick).dup.insert(1,"‍")}. Поздравляем! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+              m.reply "Волею судеб, статус зашкваренного пидора был снят с #{(m.user.nick).dup.insert(1,"‍")}. Поздравляем! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
             else
-              m.reply "Волею судеб, статус зашкваренного пидора был снят с #{m.user.nick}. Поздравляем! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+              m.reply "Волею судеб, статус зашкваренного пидора был снят с #{m.user.nick}. Поздравляем! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
             end
 
@@ -1360,17 +1716,17 @@ k = Cinch::Bot.new do
 
 
             @temp_new_pidor=@temp_new_pidors.to_a.sample
-            m.reply 'И новым пидором становится...'
+            m.reply 'И новым пидором становится...'.ubernation_days
             sleep 3
 
             User('ChanServ').send("VOICE #konsolechka #{@temp_new_pidor}")
             $pidors[$pidors.select{|k,v|v[:nick][@temp_new_pidor]}.values.last[:num]][:pidor_status]=true
 
             if ($no_highlight_nicks.include?(@temp_new_pidor))
-              m.reply "#{(@temp_new_pidor).dup.insert(1,"‍")}! Поздравляем! Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+              m.reply "#{(@temp_new_pidor).dup.insert(1,"‍")}! Поздравляем! Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
             else
-              m.reply "#{@temp_new_pidor}! Поздравляем! Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+              m.reply "#{@temp_new_pidor}! Поздравляем! Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
             end
 
@@ -1388,7 +1744,7 @@ k = Cinch::Bot.new do
               end
               $pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]=$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-((($pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-10)/rand(3..8)).ceil)
               if ($debug_mode)
-                User(m.user.nick).send("Ваш коэффициент понижен: #{old_chance}->#{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}",true)
+                User(m.user.nick).send("Ваш коэффициент понижен: #{old_chance}->#{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}".ubernation_days,true)
               end
 
 
@@ -1398,7 +1754,7 @@ k = Cinch::Bot.new do
           end
 
         else
-          m.reply "Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}. До возможности применить команду осталось #{distance_of_time_in_words(3600-(Time.now.to_i-$pidor_time))} https://your-domain.ga/pidor/ - статистика"
+          m.reply "Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}. До возможности применить команду осталось #{distance_of_time_in_words(3600-(Time.now.to_i-$pidor_time))} https://your-domain.ga/pidor/ - статистика".ubernation_days
         end
 
         if ($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count<=1 && !$game_ending && $game_started)
@@ -1407,12 +1763,12 @@ k = Cinch::Bot.new do
           $game_started=false
 
           if ($no_highlight_nicks.include?($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]))
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!"
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!".ubernation_days
 
 
 
           else
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!"
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!".ubernation_days
 
 
           end
@@ -1555,12 +1911,12 @@ k = Cinch::Bot.new do
           $game_ending_started=Time.now
           $game_started=false
           if ($no_highlight_nicks.include?($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]))
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!"
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!".ubernation_days
 
 
 
           else
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!"
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!".ubernation_days
 
 
           end
@@ -1596,7 +1952,7 @@ k = Cinch::Bot.new do
           end
           $pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]+=rand(2..5)
           if ($debug_mode)
-            User(m.user.nick).send("Коэффициент #{m.user.nick} увеличился на #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}",true)
+            User(m.user.nick).send("Коэффициент #{m.user.nick} увеличился на #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}".ubernation_days,true)
           end
         end
       end
@@ -1608,7 +1964,7 @@ k = Cinch::Bot.new do
         end
         $pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]+=rand(1..4)
         if ($debug_mode)
-          User(m.user.nick).send("Коэффициент #{m.user.nick} увеличился на #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}",true)
+          User(m.user.nick).send("Коэффициент #{m.user.nick} увеличился на #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}".ubernation_days,true)
         end
       end
 
@@ -1621,12 +1977,12 @@ k = Cinch::Bot.new do
         $game_ending_started=Time.now
         $game_started=false
         if ($no_highlight_nicks.include?($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]))
-          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!"
+          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!".ubernation_days
 
 
 
         else
-          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!"
+          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!".ubernation_days
 
 
         end
@@ -1649,33 +2005,35 @@ k = Cinch::Bot.new do
 
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s* зашкварь (.+)/i) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || @bots.include?(m.user.nick)
-
+      m.reply "Игра про пидоров в данный момент сломана, приносим наши извинения!".ubernation_days
+      next
+      
       if (!$game_started)
-        m.reply "Игра про пидоров в данный момент неактивна, запустите её командой !пидор"
+        m.reply "Игра про пидоров в данный момент неактивна, запустите её командой".ubernation_days +" !пидор"
       else
         if ($game_ending)
-          m.reply "Игра про пидоров в данный момент завершается, пожалуйста подождите #{(60-(Time.now-$game_ending_started)).ceil} сек."
+          m.reply "Игра про пидоров в данный момент завершается, пожалуйста подождите #{(60-(Time.now-$game_ending_started)).ceil} сек.".ubernation_days
         else
           if ($pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:pidor_status])
-            m.reply "Да ты сам зашкварен, чмо! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+            m.reply "Да ты сам зашкварен, чмо! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
           else
 
             if (!(Channel('#konsolechka').has_user?(n.strip)))
-              m.reply "404: юзер #{n} не найден)"
+              m.reply "404: юзер #{n} не найден)".ubernation_days
             else
               user=User(n.strip)
               if (!((Time.now-$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_attack_time])>5))
-                m.reply  "До возможности применить команду осталось #{distance_of_time_in_words(5-(Time.now-$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_attack_time]))}"
+                m.reply  "До возможности применить команду осталось #{distance_of_time_in_words(5-(Time.now-$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_attack_time]))}".ubernation_days
               else
                 $pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_attack_time]=Time.now
                 if (user.nick==m.user.nick)
                   if ($no_highlight_nicks.include?(m.user.nick))
 
-                    m.reply "#{(m.user.nick).dup.insert(1,"‍")} со смаком пожрал своей ложкой из унитаза, запасшись силами!"
+                    m.reply "#{(m.user.nick).dup.insert(1,"‍")} со смаком пожрал своей ложкой из унитаза, запасшись силами!".ubernation_days
 
 
                   else
-                    m.reply "#{m.user.nick} со смаком пожрал своей ложкой из унитаза, запасшись силами!"
+                    m.reply "#{m.user.nick} со смаком пожрал своей ложкой из унитаза, запасшись силами!".ubernation_days
 
 
                   end
@@ -1691,7 +2049,7 @@ k = Cinch::Bot.new do
                   $pidors.map{|kkk,vvv|vvv[:nick]}.each{|n| player_list<<{n=>{:chance=>$pidors[$pidors.select{|k,v|v[:nick]==n}.values.last[:num]][:chance]+(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==n}.values.last[:num]][:last_message].to_i)/900).ceil),:is_pidor=>$pidors[$pidors.select{|k,v|v[:nick]==n}.values.last[:num]][:pidor_status],:is_online=>$pidors[$pidors.select{|k,v|v[:nick]==n}.values.last[:num]][:active]}}}
 
                   if ($debug_mode)
-                    User(m.user.nick).send("Коэффициент #{m.user.nick} изменился на #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}",true)
+                    User(m.user.nick).send("Коэффициент #{m.user.nick} изменился на #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}".ubernation_days,true)
                   end
 
 
@@ -1704,11 +2062,11 @@ k = Cinch::Bot.new do
                     if ($no_highlight_nicks.include?(user.nick))
 
 
-                      m.reply "#{(user.nick).dup.insert(1,"‍")} уже зашкварен! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+                      m.reply "#{(user.nick).dup.insert(1,"‍")} уже зашкварен! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
 
                     else
-                      m.reply "#{user.nick} уже зашкварен! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+                      m.reply "#{user.nick} уже зашкварен! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
 
                     end
@@ -1721,9 +2079,9 @@ k = Cinch::Bot.new do
                       our_rand = rand(0..($pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]+(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)+$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]+(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)))
 
                       if ($debug_mode)
-                        User(m.user.nick).send("Коэффициенты #{m.user.nick}: #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]} (+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)}), #{user.nick}: #{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]} (+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)})",true)
+                        User(m.user.nick).send("Коэффициенты #{m.user.nick}: #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]} (+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)}), #{user.nick}: #{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]} (+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)})".ubernation_days,true)
 
-                        User(m.user.nick).send("Формула победы нападающего: (rand(0..(#{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)}+#{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]}+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)})<=(#{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]}+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)})",true)
+                        User(m.user.nick).send("Формула победы нападающего: (rand(0..(#{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)}+#{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]}+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)})<=(#{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]}+#{(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)})".ubernation_days,true)
 
                         victory_chance=0
 
@@ -1734,7 +2092,7 @@ k = Cinch::Bot.new do
                         end
                         victory_chance = (victory_chance/100).ceil
 
-                        User(m.user.nick).send("Результат: (#{our_rand}<#{($pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]+(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil))}) = #{(our_rand<$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]+(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)).to_s}. Шанс победы: #{victory_chance}%.",true)
+                        User(m.user.nick).send("Результат: (#{our_rand}<#{($pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]+(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil))}) = #{(our_rand<$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]+(((Time.now.to_i-$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:last_message].to_i)/900).ceil)).to_s}. Шанс победы: #{victory_chance}%.".ubernation_days,true)
 
                       end
 
@@ -1747,11 +2105,11 @@ k = Cinch::Bot.new do
                         if ($no_highlight_nicks.include?(user.nick)||$no_highlight_nicks.include?(m.user.nick))
 
 
-                          m.reply "#{(m.user.nick).dup.insert(1,"‍")} успешно зашкварил #{(user.nick).dup.insert(1,"‍")}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+                          m.reply "#{(m.user.nick).dup.insert(1,"‍")} успешно зашкварил #{(user.nick).dup.insert(1,"‍")}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
                         else
 
-                          m.reply "#{m.user.nick} успешно зашкварил #{user.nick}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+                          m.reply "#{m.user.nick} успешно зашкварил #{user.nick}! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
                         end
 
@@ -1772,7 +2130,7 @@ k = Cinch::Bot.new do
                         $pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]+=rand(-2..1)
 
                         if ($debug_mode)
-                          User(m.user.nick).send("Коэффициент #{m.user.nick} изменился на #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}",true)
+                          User(m.user.nick).send("Коэффициент #{m.user.nick} изменился на #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==m.user.nick}.values.last[:num]][:chance]}".ubernation_days,true)
                         end
 
                       else
@@ -1781,11 +2139,11 @@ k = Cinch::Bot.new do
                         if ($no_highlight_nicks.include?(user.nick)||$no_highlight_nicks.include?(m.user.nick))
 
 
-                          m.reply "#{(m.user.nick).dup.insert(1,"‍")} не сумел зашкварить #{(user.nick).dup.insert(1,"‍")} и сам стал пидором! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+                          m.reply "#{(m.user.nick).dup.insert(1,"‍")} не сумел зашкварить #{(user.nick).dup.insert(1,"‍")} и сам стал пидором! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
                         else
 
-                          m.reply "#{m.user.nick} не сумел зашкварить #{user.nick} и сам стал пидором! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}"
+                          m.reply "#{m.user.nick} не сумел зашкварить #{user.nick} и сам стал пидором! Незашкваренных в хате осталось: #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count}".ubernation_days
 
                         end
 
@@ -1804,7 +2162,7 @@ k = Cinch::Bot.new do
                         $pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]+=rand(-2..0)
 
                         if ($debug_mode)
-                          User(m.user.nick).send("Коэффициент #{user.nick} изменился на #{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]}",true)
+                          User(m.user.nick).send("Коэффициент #{user.nick} изменился на #{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]-old_chance} и стал равен #{$pidors[$pidors.select{|k,v|v[:nick]==user.nick}.values.last[:num]][:chance]}".ubernation_days,true)
                         end
 
                       end
@@ -1815,21 +2173,25 @@ k = Cinch::Bot.new do
                       $game_ending=true
                       $game_ending_started=Time.now
                       $game_started=false
-                      if ($no_highlight_nicks.include?($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]))
-
-
-                        m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!"
-
+											if ($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count==1)
+                        if ($no_highlight_nicks.include?($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]))
+                        
+                        
+                          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!".ubernation_days
+                        
+                        else
+                        
+                          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!".ubernation_days
+                        
+                        end
+                        $prev_winner={:nick=>$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick],:date=>Time.now,:glavpidor=>$first_pidor_data&.nick}
                       else
-
-                        m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!"
-
+                        m.reply "И у нас нет победителя игры! На хате зашкварены все присутствующие! Поздравить некого!".ubernation_days
+                        
+                        $prev_winner={:nick=>"Konsolechka",:date=>Time.now,:glavpidor=>$first_pidor_data&.nick}
                       end
-
-
-
-                      $prev_winner={:nick=>$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick],:date=>Time.now,:glavpidor=>$first_pidor_data&.nick}
-
+                      
+                      
                       Channel('#konsolechka').voiced.map{|e|e.nick}.each do |u|
                         unless @bots.include?(u)
                           if (Channel('#konsolechka').voiced?(u))
@@ -1852,17 +2214,25 @@ k = Cinch::Bot.new do
             $game_ending=true
             $game_ending_started=Time.now
             $game_started=false
-            if ($no_highlight_nicks.include?($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]))
-              m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!"
-
-
-
+            if ($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.count==1)
+              if ($no_highlight_nicks.include?($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]))
+                m.reply "И у нас есть победитель игры! На хате не зашкварен только #{($pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]).dup.insert(1,"‍")}! Поздравляем!".ubernation_days
+              
+              
+              
+              else
+                m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!".ubernation_days
+              
+              
+              end
+              $prev_winner={:nick=>$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick],:date=>Time.now.strftime("%d.%m.%Y %H:%M"),:glavpidor=>$first_pidor_data&.nick}
             else
-              m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]}! Поздравляем!"
-
-
+              m.reply "И у нас нет победителя игры! На хате зашкварены все присутствующие! Поздравить некого!".ubernation_days
+                        
+              $prev_winner={:nick=>"Konsolechka",:date=>Time.now,:glavpidor=>$first_pidor_data&.nick}
             end
-            $prev_winner={:nick=>$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick],:date=>Time.now.strftime("%d.%m.%Y %H:%M"),:glavpidor=>$first_pidor_data&.nick}
+            #  $gamestats[:games][$game_session_number][:stats][:finished]=Time.now
+            #  $gamestats[:games][$game_session_number][:stats][:winner]=$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]
 
 
 
