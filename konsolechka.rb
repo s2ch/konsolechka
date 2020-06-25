@@ -1126,41 +1126,44 @@ k = Cinch::Bot.new do
         m.safe_reply title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').strip.ubernation_days
       else
         agent.get url.to_s
-        title = agent.page.search('title')[0].text
+        title = agent.page.search('title')[0].text.strip.gsub(/ - YouTube/,'').gsub(/\s+/,' ').gsub(/\s+([,\.!])/,'\1').gsub(/([,\.!])(?![\s\d]+)(?![$\/])/,'\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
         if agent.page.uri.to_s.match?(/youtube\.com\/watch/) ||  agent.page.uri.to_s.match?(/youtu\.be/)
           
           if (title.empty? || title=="YouTube")
-             title = agent.page.search('meta[name="title"]')[0][:content]
+             title = agent.page.search('meta[name="title"]')[0][:content].strip.gsub(/ - YouTube/,'').gsub(/\s+/,' ').gsub(/\s+([,\.!])/,'\1').gsub(/([,\.!])(?![\s\d]+)(?![$\/])/,'\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
           end
-          view_count = agent.page.search('.watch-view-count').text.gsub(/ views/, '')
+          view_count_tmp = agent.page.search('.watch-view-count').text.gsub(/ views/, '')
+          if (view_count_tmp.length>0)
+             view_count= view_count_tmp.tr('^0-9', '').to_i
+          end
           watcher_live_names = ['зрителей', 'зритель', 'зрителя']
           watcher_names = ['просмотров', 'просмотр', 'просмотра']
           
-          if view_count.empty?
+          if !(view_count.is_a? Integer)
              view_count_tmp = agent.page.search("script").text.scan(/videoViewCountRenderer":{"viewCount":{"simpleText":"([0-9\.,\ ]+) (?:views|Aufrufe)"}/im)
              if (view_count_tmp.length>0)
                 view_count=view_count_tmp[0][0].tr('^0-9', '').to_i
              end
           end
              
-          if view_count.empty?
+          if !(view_count.is_a? Integer)
              view_count_tmp = agent.page.search("script").text.scan(/videoViewCountRenderer\\":{\\"viewCount\\":{\\"simpleText\\":\\"([0-9\.,\ ]+) /im)
              if (view_count_tmp.length>0)
              view_count=view_count_tmp[0][0].tr('^0-9', '').to_i
              end
           end
           
-          if view_count.empty?
+          if !(view_count.is_a? Integer)
              view_count_num_tmp = agent.page.search("script").text.scan(/viewCount\\":\{\\"runs\\":\[\{\\"text\\":\\"(?:Aktuell )?([0-9\.,\ ]+) (?:watching now|Zuschauer)\\"\}/im)
           
              if (view_count_num_tmp.length>0)
                  view_count_num=view_count_num_tmp[0][0].tr('^0-9', '').to_i
              end
-             if view_count_num.nil?
-                
+             
+             if !(view_count_num.is_a? Integer)
                 view_count_num_tmp = agent.page.search("script").text.scan(/videoViewCountRenderer":{"viewCount":{"runs":\[{"text":"(?:[^\ 0-9]+ )?([0-9\.,\ ]+) /im)
                 if (view_count_num_tmp.length>0)
-                view_count_num=view_count_num_tmp[0][0].tr('^0-9', '').to_i
+                   view_count_num=view_count_num_tmp[0][0].tr('^0-9', '').to_i
                 end
              end
              
@@ -1187,7 +1190,7 @@ k = Cinch::Bot.new do
              title = title.ubernation_days + " " + "(#{view_count_str} #{watcher_live_name})".ubernation_days
              
           else
-             view_count_num = view_count.tr('^0-9', '').to_i
+             view_count_num = view_count
              
                 
              w_index = view_count_num % 100
@@ -1225,32 +1228,31 @@ k = Cinch::Bot.new do
     end
   end
 
-  on :message do |m|
-    name = m.user.nick
-    msg = m.message
-    channel = m.channel&.name
 
-    u = User.first_or_create(name: name)
-    mes = Message.create(text: msg, user: u, channel: channel)
-    if mes.id.to_s.chars.uniq.length == 1
-      m.channel.action "поздравила #{m.user.nick} с гетом (сообщение №#{mes.id})!".ubernation_days
-    end
-  end
+  #on :message do |m|
+  #  name = m.user.nick
+  #  msg = m.message
+  #  channel = m.channel&.name
+  #
+  #  u = User.first_or_create(name: name)
+  #  mes = Message.create(text: msg, user: u, channel: channel)
+  #  if mes.id.to_s.chars.uniq.length == 1
+  #    m.channel.action "поздравила #{m.user.nick} с гетом (сообщение №#{mes.id})!".ubernation_days
+  #  end
+  #end
 
-  on :join do |m|
-    name = m.user.nick
-    host = m.user.host
-    u = User.first_or_create(name: name)
-    h = Host.create(host: host, user: u)
-  end
+  #on :join do |m|
+  #  name = m.user.nick
+  #  host = m.user.host
+  #  u = User.first_or_create(name: name)
+  #  h = Host.create(host: host, user: u)
+  #end
 
   on :notice, /VERSION/ do |mn|
     unless @ignored_users.include?(mn.user.host) || @ignored_nicks.include?(mn.user.nick) || @replied
       nick = mn.user.nick
       version = mn.params[1].match(/\u0001VERSION (.+)\u0001/)[1]
       if ($no_highlight_nicks.include?(nick))
-
-
         Channel('#konsolechka').send "#{(nick).dup.insert(1,"‍")} использует #{version}".gsub(/[^[:print:]]/i, '').ubernation_days
       else
         Channel('#konsolechka').send "#{nick} использует #{version}".gsub(/[^[:print:]]/i, '').ubernation_days
