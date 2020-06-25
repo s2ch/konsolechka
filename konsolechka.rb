@@ -1,6 +1,5 @@
 # coding: utf-8
 # frozen_string_literal: false
-gem 'json', '2.0.2'
 require 'json'
 
 require 'cinch'
@@ -114,7 +113,7 @@ I18n.locale = :ru
 
 #ОБЩИЕ МЕТОДЫ
 
- $translate = Google::Cloud::Translate.new(
+$translate = Google::Cloud::Translate.new(
     version: :v2,
     project_id: "konsol-12345",
     credentials: "/konsolechka/google-translate.json"
@@ -175,15 +174,12 @@ class String
   
   def ubernation_days
          if ((Time.new.wday == 3) && (Time.new.day <7))
-           puts "UA "+ self
            translation = $translate.translate self, to: "uk"
            CGI.unescapeHTML(translation.text).gsub(/ \.\.\./, '…')
          elsif ((Time.new.wday == 4) && (Time.new.day <7))
-           puts "BE " + self
            translation = $translate.translate self, to: "be"
            CGI.unescapeHTML(translation.text).gsub(/ \.\.\./, '…')
          else
-           puts "ELSE " + self
            self.gsub(/\.\.\./, '…')
          end   
   end
@@ -292,10 +288,6 @@ k = Cinch::Bot.new do
              link_check = link_check + "#" + CGI.unescape(link_result.fragment).gsub(/\s/,'%20')
           end
           
-          
-          
-          
-      
       if (link_check.length>100)
         #link_final = "["+link_check.posyl_v_googl+"] "+link_check
         link_final = link_check
@@ -1136,19 +1128,42 @@ k = Cinch::Bot.new do
         agent.get url.to_s
         title = agent.page.search('title')[0].text
         if agent.page.uri.to_s.match?(/youtube\.com\/watch/) ||  agent.page.uri.to_s.match?(/youtu\.be/)
+          
+          if (title.empty? || title=="YouTube")
+             title = agent.page.search('meta[name="title"]')[0][:content]
+          end
           view_count = agent.page.search('.watch-view-count').text.gsub(/ views/, '')
           watcher_live_names = ['зрителей', 'зритель', 'зрителя']
           watcher_names = ['просмотров', 'просмотр', 'просмотра']
           
-          
           if view_count.empty?
-             view_count = agent.page.search("script").text.scan(/videoViewCountRenderer":{"viewCount":{"simpleText":"([0-9\.,\ ]+) views"}/im)[0][0].tr('^0-9', '').to_i
+             view_count_tmp = agent.page.search("script").text.scan(/videoViewCountRenderer":{"viewCount":{"simpleText":"([0-9\.,\ ]+) (?:views|Aufrufe)"}/im)
+             if (view_count_tmp.length>0)
+                view_count=view_count_tmp[0][0].tr('^0-9', '').to_i
+             end
           end
              
-             
           if view_count.empty?
-             view_count_num = agent.page.search("script").text.scan(/viewCount\\":\{\\"runs\\":\[\{\\"text\\":\\"([0-9\.,\ ]+) watching now\\"\}/im)[0][0].tr('^0-9', '').to_i
+             view_count_tmp = agent.page.search("script").text.scan(/videoViewCountRenderer\\":{\\"viewCount\\":{\\"simpleText\\":\\"([0-9\.,\ ]+) /im)
+             if (view_count_tmp.length>0)
+             view_count=view_count_tmp[0][0].tr('^0-9', '').to_i
+             end
+          end
+          
+          if view_count.empty?
+             view_count_num_tmp = agent.page.search("script").text.scan(/viewCount\\":\{\\"runs\\":\[\{\\"text\\":\\"(?:Aktuell )?([0-9\.,\ ]+) (?:watching now|Zuschauer)\\"\}/im)
+          
+             if (view_count_num_tmp.length>0)
+                 view_count_num=view_count_num_tmp[0][0].tr('^0-9', '').to_i
+             end
+             if view_count_num.nil?
                 
+                view_count_num_tmp = agent.page.search("script").text.scan(/videoViewCountRenderer":{"viewCount":{"runs":\[{"text":"(?:[^\ 0-9]+ )?([0-9\.,\ ]+) /im)
+                if (view_count_num_tmp.length>0)
+                view_count_num=view_count_num_tmp[0][0].tr('^0-9', '').to_i
+                end
+             end
+             
              w_index = view_count_num % 100
              
              if (w_index >=11 && w_index <= 14)
