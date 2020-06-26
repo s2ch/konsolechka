@@ -356,7 +356,7 @@ k = Cinch::Bot.new do
       translation = $translate.translate n1, to: n2
       translation = CGI.unescapeHTML(translation.text).gsub(/ \.\.\./, '…')
 
-      m.replytranslation.to_s
+      m.reply(translation.to_s)
 
     end
   end
@@ -488,7 +488,7 @@ k = Cinch::Bot.new do
       twi_length = n.gsub(%r{(?:http|https)://\S+}, '').gsub(/  /, ' ')
       if twi_length.length > 280
         final_answer = 'Слишком длинное сообщение (>280 символов). Вы ебанули ' + twi_length.length.to_s + ' символов. Укоротите ваше говно на ' + (twi_length.length - 280).to_s + ' буков.'
-        m.reply final_answer.ubernation_days
+        m.reply(final_answer.ubernation_days)
       else
         unless @vatniks.include?(m.user.nick)
           if n.match?(/^-r(\d+)\s+/) || n.match?(/^-r\s*(\d+)\s+/)
@@ -584,7 +584,7 @@ k = Cinch::Bot.new do
              resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
              if resp.dig('items', 0, 'link').nil?
    
-               m.reply'К сожалению, по вашему запросу ничего не найдено!'.ubernation_days
+               m.reply ('К сожалению, по вашему запросу ничего не найдено!'.ubernation_days)
                next
    
              end
@@ -627,7 +627,7 @@ k = Cinch::Bot.new do
          puts "https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off"
          if resp.dig('items', 0, 'link').nil?
 
-           m.reply'К сожалению, по вашему запросу ничего не найдено!'.ubernation_days
+           m.reply ('К сожалению, по вашему запросу ничего не найдено!'.ubernation_days)
            next
 
          end
