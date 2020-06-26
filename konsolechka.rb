@@ -985,7 +985,7 @@ k = Cinch::Bot.new do
         answers2 = ['или', 'ну или']
         answers3 = ['!', '.', '...']
         final_answer = "#{answers.sample} " + (our_answer_array[0]).to_s.zamena_mestoimeniy + " #{answers2.sample} " + (our_answer_array[1]).to_s.zamena_mestoimeniy + (answers3.sample).to_s
-        m.safe_replyfinal_answer.ubernation_days
+        m.safe_reply(final_answer.ubernation_days)
 
       else
         our_source_array = a1.split(/,/).map(&:strip)
@@ -993,7 +993,7 @@ k = Cinch::Bot.new do
         answers = ['Конечно же', 'Мне кажется,', 'Я считаю,']
         answers2 = ['!', '.', '...']
         final_answer = "#{answers.sample} " + (our_answer_array[0]).to_s.zamena_mestoimeniy + (answers2.sample).to_s
-        m.safe_replyfinal_answer.ubernation_days
+        m.safe_reply(final_answer.ubernation_days)
       end
     end
   end
@@ -1026,7 +1026,7 @@ k = Cinch::Bot.new do
         m.safe_reply(final_answer.ubernation_days)
       elsif ili_rand >= 0.1 && ili_rand < 0.9
         final_answer = "#{answers.sample} " + ((Random.new(Digest::MD5.hexdigest(Time.now.strftime('%d/%m/%Y') + m.user.nick + m.message).to_i(16).to_f).rand > 0.5 ? a1 : a2)).to_s.zamena_mestoimeniy
-        m.safe_replyfinal_answer.ubernation_days
+        m.safe_reply(final_answer.ubernation_days)
       else
         final_answer = "#{answers.sample} " + (Random.new(Digest::MD5.hexdigest(Time.now.strftime('%d/%m/%Y') + m.user.nick + m.message).to_i(16).to_f).rand > 0.5 ? "#{a1} и #{a2}!" : "и #{a1} и #{a2}!").zamena_mestoimeniy.kapitalizirovat_russky
         m.safe_reply(final_answer.ubernation_days)
@@ -1041,7 +1041,7 @@ k = Cinch::Bot.new do
       ili_rand = Random.new(Digest::MD5.hexdigest(Time.now.strftime('%d/%m/%Y') + m.user.nick + m.message).to_i(16).to_f).rand
       if ili_rand < 0.333333
         final_answer = "#{answers.sample} " + a2.to_s.zamena_mestoimeniy
-        m.safe_replyfinal_answer.ubernation_days
+        m.safe_reply(final_answer.ubernation_days)
       else
         final_answer = "#{answers.sample} " + (Random.new(Digest::MD5.hexdigest(Time.now.strftime('%d/%m/%Y') + m.user.nick + m.message).to_i(16).to_f).rand > 0.5 ? "#{a1main} - #{a1}!" : "#{a1main} не #{a1}!").zamena_mestoimeniy
         m.safe_reply(final_answer.ubernation_days)
