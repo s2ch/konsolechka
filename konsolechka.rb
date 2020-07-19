@@ -1225,7 +1225,19 @@ k = Cinch::Bot.new do
           end
 
         end
-        safe_title = title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').strip
+        
+        if agent.page.uri.to_s.match?(%r{github\.com.*issues.*})
+            # https://docs.github.com/en/rest/reference/issues#get-an-issue
+            # Сюда смотреть когда регекс сломается, пример https://api.github.com/repos/matrix-org/matrix-doc/issues/1882
+            problem_status = agent.page.search('.TableObject-item').text.gsub(/\n/, ' ').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
+
+          
+             title = title.ubernation_days + ' ' + "(Status:#{problem_status})".ubernation_days
+
+
+        end
+        
+        safe_title = title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').gsub(/\s+/, ' ').strip
         if safe_title.length > 400
           m.safe_reply safe_title.slice(0, 400)
         else
