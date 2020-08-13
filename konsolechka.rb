@@ -1274,7 +1274,7 @@ k = Cinch::Bot.new do
           youtube_data=JSON.parse(`youtube-dl  --flat-playlist --skip-download -J "#{url.to_s   }"`)
 
           if (youtube_data["upload_date"].to_i>0)
-            title = Date.strptime(youtube_data["upload_date"].to_s, "%Y%m%d").strftime('%d.%m.%Y')+ " — " + youtube_data["uploader"].to_s+" — "+youtube_data["title"].to_s + "("+youtube_data["average_rating"].to_f.round(1).to_s+"/5)"
+            title = Date.strptime(youtube_data["upload_date"].to_s, "%Y%m%d").strftime('%d.%m.%Y')+ " — " + youtube_data["uploader"].to_s+" — "+youtube_data["title"].to_s + " ("+youtube_data["average_rating"].to_f.round(1).to_s+"/5)"
           else
             title = youtube_data["uploader"].to_s+" — "+youtube_data["title"].to_s + " ("+youtube_data["average_rating"].to_f.round(1).to_s+"/5)"
           end
