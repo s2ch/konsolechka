@@ -24,10 +24,12 @@ require 'sinatra'
 require 'pp'
 require 'pry'
 require 'date'
+require 'net/http/post/multipart'
 require 'awesome_print'
 require 'google/cloud'
 require 'cgi'
 require 'google/cloud/translate'
+require 'resolv'
 include ActionView::Helpers::DateHelper
 include ActionView::Helpers::NumberHelper
 require 'datagrid'
@@ -35,7 +37,6 @@ require 'datagrid'
 require 'memory_profiler'
 
 # PidFile.new(:piddir => '/var/run/konsolechka', :pidfile => "konsolechka.pid")
-
 
 # class PidorsGrid
 #  include Datagrid
@@ -79,7 +80,6 @@ require 'memory_profiler'
 
 # Веб-сервер статистики игры в пидора
 class PidorApp < Sinatra::Application
-
   configure do
     set :threaded, true
     set :traps, false
@@ -99,24 +99,22 @@ class PidorApp < Sinatra::Application
     erb :help
   end
 
-
   get '/pidor/:session_number/' do
     erb :index
   end
 end
 
-
 I18n.default_locale = :ru
 I18n.locale = :ru
 
 # ОБЩИЕ МЕТОДЫ
+$translate = Google::Cloud::Translate
 
-$translate = Google::Cloud::Translate.new(
-  version: :v2,
-  project_id: 'konsol-12345',
-  credentials: '/konsolechka/google-translate.json'
-  )
-
+#$translate = Google::Cloud::Translate.new(
+#  version: :v2,
+#  project_id: 'konsol-12345',
+#  credentials: '/konsolechka/google-translate.json'
+#)
 
 $twitter_topics = ['your-twitter-id', 'пердолик', 'пердолики', '2ch.hk', '@your-twitter-id', 'Пердолики']
 $current_twitter_topics = []
@@ -133,7 +131,6 @@ $twis ||= Twitter::Streaming::Client.new do |config|
   config.access_token = 'Your_ACCESS_TOKEN'
   config.access_token_secret = 'Your_TOKEN_SECRET'
 end
-
 
 Thread.new do
   sleep 20
@@ -164,17 +161,16 @@ Thread.new do
   end
 end
 
-
 Google::UrlShortener::Base.api_key = 'YOUR_API_KEY'
 Google::UrlShortener::Base.log = $stdout
 
 class String
   def zamena_mestoimeniy
-    self.strip.gsub(/\s+/, ' ').gsub(/\bне нельзя\b/i, 'можноÜÜÜ').gsub(/\bне можно\b/i, 'нельзяÜÜÜ').gsub(/\bмне\b/, 'тебеÜÜÜ').gsub(/\bя\b/, 'тыÜÜÜ').gsub(/\bЯ\b/, 'ТыÜÜÜ').gsub(/\bмы\b/, 'выÜÜÜ').gsub(/\bМы\b/, 'ВыÜÜÜ').gsub(/\bменя\b/, 'тебяÜÜÜ').gsub(/\bМеня\b/, 'ТебяÜÜÜ').gsub(/\bнас\b/, 'васÜÜÜ').gsub(/\bНас\b/, 'ВасÜÜÜ').gsub(/\bмне\b/, 'тебеÜÜÜ').gsub(/\bМне\b/, 'ТебеÜÜÜ').gsub(/\bнам\b/, 'вамÜÜÜ').gsub(/\bНам\b/, 'ВамÜÜÜ').gsub(/\bмной\b/, 'тобойÜÜÜ').gsub(/\bМной\b/, 'ТобойÜÜÜ').gsub(/\bмой\b/, 'твойÜÜÜ').gsub(/\bМой\b/, 'ТвойÜÜÜ').gsub(/\bмоя\b/, 'твояÜÜÜ').gsub(/\bМоя\b/, 'ТвояÜÜÜ').gsub(/\bмое\b/, 'твоеÜÜÜ').gsub(/\bМое\b/, 'ТвоеÜÜÜ').gsub(/\bмоё\b/, 'твоёÜÜÜ').gsub(/\bМоё\b/, 'ТвоёÜÜÜ').gsub(/\bмои\b/, 'твоиÜÜÜ').gsub(/\bМои\b/, 'ТвоиÜÜÜ').gsub(/\bмоего\b/, 'твоегоÜÜÜ').gsub(/\bМоего\b/, 'ТвоегоÜÜÜ').gsub(/\bмоей\b/, 'твоейÜÜÜ').gsub(/\bМоей\b/, 'ТвоейÜÜÜ').gsub(/\bмоих\b/, 'твоихÜÜÜ').gsub(/\bМоих\b/, 'ТвоихÜÜÜ').gsub(/\bмоему\b/, 'твоемуÜÜÜ').gsub(/\bМоему\b/, 'ТвоемуÜÜÜ').gsub(/\bмою\b/, 'твоюÜÜÜ').gsub(/\bМою\b/, 'ТвоюÜÜÜ').gsub(/\bмоим\b/, 'твоимÜÜÜ').gsub(/\bМоим\b/, 'ТвоимÜÜÜ').gsub(/\bмоими\b/, 'твоимиÜÜÜ').gsub(/\bМоими\b/, 'ТвоимиÜÜÜ').gsub(/\bмоём\b/, 'твоёмÜÜÜ').gsub(/\bМоём\b/, 'ТвоёмÜÜÜ').gsub(/\bмоем\b/, 'твоемÜÜÜ').gsub(/\bМоем\b/, 'ТвоемÜÜÜ').gsub(/\bнаш\b/, 'вашÜÜÜ').gsub(/\bНаш\b/, 'ВашÜÜÜ').gsub(/\bнаша\b/, 'вашаÜÜÜ').gsub(/\bНаша\b/, 'ВашаÜÜÜ').gsub(/\bнаше\b/, 'вашеÜÜÜ').gsub(/\bНаше\b/, 'ВашеÜÜÜ').gsub(/\bнаши\b/, 'вашиÜÜÜ').gsub(/\bНаши\b/, 'ВашиÜÜÜ').gsub(/\bты\b/, 'яÜÜÜ').gsub(/\bТы\b/, 'ЯÜÜÜ').gsub(/\bвы\b/, 'мыÜÜÜ').gsub(/\bВы\b/, 'МыÜÜÜ').gsub(/\bтебя\b/, 'меняÜÜÜ').gsub(/\bТебя\b/, 'МеняÜÜÜ').gsub(/\bвас\b/, 'насÜÜÜ').gsub(/\bВас\b/, 'НасÜÜÜ').gsub(/\bтебе\b/, 'мнеÜÜÜ').gsub(/\bТебе\b/, 'МнеÜÜÜ').gsub(/\bвам\b/, 'намÜÜÜ').gsub(/\bВам\b/, 'НамÜÜÜ').gsub(/\bтобой\b/, 'мнойÜÜÜ').gsub(/\bТобой\b/, 'МнойÜÜÜ').gsub(/\bтвой\b/, 'мойÜÜÜ').gsub(/\bТвой\b/, 'МойÜÜÜ').gsub(/\bтвоя\b/, 'мояÜÜÜ').gsub(/\bТвоя\b/, 'МояÜÜÜ').gsub(/\bтвое\b/, 'моеÜÜÜ').gsub(/\bТвое\b/, 'МоеÜÜÜ').gsub(/\bтвоё\b/, 'моёÜÜÜ').gsub(/\bТвоё\b/, 'МоёÜÜÜ').gsub(/\bтвои\b/, 'моиÜÜÜ').gsub(/\bТвои\b/, 'МоиÜÜÜ').gsub(/\bтвоего\b/, 'моегоÜÜÜ').gsub(/\bТвоего\b/, 'МоегоÜÜÜ').gsub(/\bтвоей\b/, 'моейÜÜÜ').gsub(/\bТвоей\b/, 'МоейÜÜÜ').gsub(/\bтвоих\b/, 'моихÜÜÜ').gsub(/\bТвоих\b/, 'МоихÜÜÜ').gsub(/\bтвоему\b/, 'моемуÜÜÜ').gsub(/\bТвоему\b/, 'МоемуÜÜÜ').gsub(/\bтвою\b/, 'моюÜÜÜ').gsub(/\bТвою\b/, 'МоюÜÜÜ').gsub(/\bтвоим\b/, 'моимÜÜÜ').gsub(/\bТвоим\b/, 'МоимÜÜÜ').gsub(/\bтвоими\b/, 'моимиÜÜÜ').gsub(/\bТвоими\b/, 'МоимиÜÜÜ').gsub(/\bтвоём\b/, 'моёмÜÜÜ').gsub(/\bТвоём\b/, 'МоёмÜÜÜ').gsub(/\bтвоем\b/, 'моемÜÜÜ').gsub(/\bТвоем\b/, 'МоемÜÜÜ').gsub(/\bваш\b/, 'нашÜÜÜ').gsub(/\bВаш\b/, 'НашÜÜÜ').gsub(/\bваша\b/, 'нашаÜÜÜ').gsub(/\bВаша\b/, 'НашаÜÜÜ').gsub(/\bваше\b/, 'нашеÜÜÜ').gsub(/\bВаше\b/, 'НашеÜÜÜ').gsub(/\bваши\b/, 'нашиÜÜÜ').gsub(/\bВаши\b/, 'НашиÜÜÜ').gsub(/ÜÜÜ/, '').strip.gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
+    strip.gsub(/\s+/, ' ').gsub(/\bне нельзя\b/i, 'можноÜÜÜ').gsub(/\bне можно\b/i, 'нельзяÜÜÜ').gsub(/\bмне\b/, 'тебеÜÜÜ').gsub(/\bя\b/, 'тыÜÜÜ').gsub(/\bЯ\b/, 'ТыÜÜÜ').gsub(/\bмы\b/, 'выÜÜÜ').gsub(/\bМы\b/, 'ВыÜÜÜ').gsub(/\bменя\b/, 'тебяÜÜÜ').gsub(/\bМеня\b/, 'ТебяÜÜÜ').gsub(/\bнас\b/, 'васÜÜÜ').gsub(/\bНас\b/, 'ВасÜÜÜ').gsub(/\bмне\b/, 'тебеÜÜÜ').gsub(/\bМне\b/, 'ТебеÜÜÜ').gsub(/\bнам\b/, 'вамÜÜÜ').gsub(/\bНам\b/, 'ВамÜÜÜ').gsub(/\bмной\b/, 'тобойÜÜÜ').gsub(/\bМной\b/, 'ТобойÜÜÜ').gsub(/\bмой\b/, 'твойÜÜÜ').gsub(/\bМой\b/, 'ТвойÜÜÜ').gsub(/\bмоя\b/, 'твояÜÜÜ').gsub(/\bМоя\b/, 'ТвояÜÜÜ').gsub(/\bмое\b/, 'твоеÜÜÜ').gsub(/\bМое\b/, 'ТвоеÜÜÜ').gsub(/\bмоё\b/, 'твоёÜÜÜ').gsub(/\bМоё\b/, 'ТвоёÜÜÜ').gsub(/\bмои\b/, 'твоиÜÜÜ').gsub(/\bМои\b/, 'ТвоиÜÜÜ').gsub(/\bмоего\b/, 'твоегоÜÜÜ').gsub(/\bМоего\b/, 'ТвоегоÜÜÜ').gsub(/\bмоей\b/, 'твоейÜÜÜ').gsub(/\bМоей\b/, 'ТвоейÜÜÜ').gsub(/\bмоих\b/, 'твоихÜÜÜ').gsub(/\bМоих\b/, 'ТвоихÜÜÜ').gsub(/\bмоему\b/, 'твоемуÜÜÜ').gsub(/\bМоему\b/, 'ТвоемуÜÜÜ').gsub(/\bмою\b/, 'твоюÜÜÜ').gsub(/\bМою\b/, 'ТвоюÜÜÜ').gsub(/\bмоим\b/, 'твоимÜÜÜ').gsub(/\bМоим\b/, 'ТвоимÜÜÜ').gsub(/\bмоими\b/, 'твоимиÜÜÜ').gsub(/\bМоими\b/, 'ТвоимиÜÜÜ').gsub(/\bмоём\b/, 'твоёмÜÜÜ').gsub(/\bМоём\b/, 'ТвоёмÜÜÜ').gsub(/\bмоем\b/, 'твоемÜÜÜ').gsub(/\bМоем\b/, 'ТвоемÜÜÜ').gsub(/\bнаш\b/, 'вашÜÜÜ').gsub(/\bНаш\b/, 'ВашÜÜÜ').gsub(/\bнаша\b/, 'вашаÜÜÜ').gsub(/\bНаша\b/, 'ВашаÜÜÜ').gsub(/\bнаше\b/, 'вашеÜÜÜ').gsub(/\bНаше\b/, 'ВашеÜÜÜ').gsub(/\bнаши\b/, 'вашиÜÜÜ').gsub(/\bНаши\b/, 'ВашиÜÜÜ').gsub(/\bты\b/, 'яÜÜÜ').gsub(/\bТы\b/, 'ЯÜÜÜ').gsub(/\bвы\b/, 'мыÜÜÜ').gsub(/\bВы\b/, 'МыÜÜÜ').gsub(/\bтебя\b/, 'меняÜÜÜ').gsub(/\bТебя\b/, 'МеняÜÜÜ').gsub(/\bвас\b/, 'насÜÜÜ').gsub(/\bВас\b/, 'НасÜÜÜ').gsub(/\bтебе\b/, 'мнеÜÜÜ').gsub(/\bТебе\b/, 'МнеÜÜÜ').gsub(/\bвам\b/, 'намÜÜÜ').gsub(/\bВам\b/, 'НамÜÜÜ').gsub(/\bтобой\b/, 'мнойÜÜÜ').gsub(/\bТобой\b/, 'МнойÜÜÜ').gsub(/\bтвой\b/, 'мойÜÜÜ').gsub(/\bТвой\b/, 'МойÜÜÜ').gsub(/\bтвоя\b/, 'мояÜÜÜ').gsub(/\bТвоя\b/, 'МояÜÜÜ').gsub(/\bтвое\b/, 'моеÜÜÜ').gsub(/\bТвое\b/, 'МоеÜÜÜ').gsub(/\bтвоё\b/, 'моёÜÜÜ').gsub(/\bТвоё\b/, 'МоёÜÜÜ').gsub(/\bтвои\b/, 'моиÜÜÜ').gsub(/\bТвои\b/, 'МоиÜÜÜ').gsub(/\bтвоего\b/, 'моегоÜÜÜ').gsub(/\bТвоего\b/, 'МоегоÜÜÜ').gsub(/\bтвоей\b/, 'моейÜÜÜ').gsub(/\bТвоей\b/, 'МоейÜÜÜ').gsub(/\bтвоих\b/, 'моихÜÜÜ').gsub(/\bТвоих\b/, 'МоихÜÜÜ').gsub(/\bтвоему\b/, 'моемуÜÜÜ').gsub(/\bТвоему\b/, 'МоемуÜÜÜ').gsub(/\bтвою\b/, 'моюÜÜÜ').gsub(/\bТвою\b/, 'МоюÜÜÜ').gsub(/\bтвоим\b/, 'моимÜÜÜ').gsub(/\bТвоим\b/, 'МоимÜÜÜ').gsub(/\bтвоими\b/, 'моимиÜÜÜ').gsub(/\bТвоими\b/, 'МоимиÜÜÜ').gsub(/\bтвоём\b/, 'моёмÜÜÜ').gsub(/\bТвоём\b/, 'МоёмÜÜÜ').gsub(/\bтвоем\b/, 'моемÜÜÜ').gsub(/\bТвоем\b/, 'МоемÜÜÜ').gsub(/\bваш\b/, 'нашÜÜÜ').gsub(/\bВаш\b/, 'НашÜÜÜ').gsub(/\bваша\b/, 'нашаÜÜÜ').gsub(/\bВаша\b/, 'НашаÜÜÜ').gsub(/\bваше\b/, 'нашеÜÜÜ').gsub(/\bВаше\b/, 'НашеÜÜÜ').gsub(/\bваши\b/, 'нашиÜÜÜ').gsub(/\bВаши\b/, 'НашиÜÜÜ').gsub(/ÜÜÜ/, '').strip.gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
   end
 
   def kapitalizirovat_russky
-    self.strip.gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»').gsub(/^[а-я]/) {|s| s[0].to_s.capitalize }
+    strip.gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»').gsub(/^[а-я]/) { |s| s[0].to_s.capitalize }
   end
 
   def ubernation_days
@@ -185,29 +181,30 @@ class String
       translation = $translate.translate self, to: 'be'
       CGI.unescapeHTML(translation.text).gsub(/ \.\.\./, '…')
     else
-      self.gsub(/\.\.\./, '…')
+      gsub(/\.\.\./, '…')
     end
   end
 
-  def posyl_v_googl
-    Google::UrlShortener.shorten!(self)
-  end
+  def ukorachivatel
+    n = Net::HTTP.new('your-domain.ga', 443)
+    n.use_ssl = true
+    n.verify_mode = OpenSSL::SSL::VERIFY_PEER
 
-  def ukorachivanie_ssylok
-    self.gsub(%r{((?:http|https)://\S+)}) do |link|
-      if link.length > 120
-        # "[#{link.posyl_v_googl}] #{link}"
-        link
-      else
-        link
-      end
+    url = URI.parse('https://your-domain.ga/post')
+
+    req = Net::HTTP::Post::Multipart.new url.path, 'file' => UploadIO.new(StringIO.new(self), 'text/plain', 'kons.txt')
+
+    response = n.start do |http|
+      http.request(req)
     end
+
+    resp = JSON.parse(response.body)
+
+    resp[0]['URL']
   end
 end
 
 k = Cinch::Bot.new do
-
-
   Thread.new do
     PidorApp.run!
     exit
@@ -227,7 +224,6 @@ k = Cinch::Bot.new do
     c.message_split_end = '…'
   end
 
-
   callback.instance_eval do
     @replied = true
     @lentach = true
@@ -241,9 +237,9 @@ k = Cinch::Bot.new do
     @otv = File.readlines('otv.txt').map(&:chomp)
 
     def t_m
-      @last_ment ||= 0; $twi.mentions_timeline(count: 3).select { |e| e.created_at.to_i > @last_ment }.reverse.tap { |e| unless e.empty?
-                                                                                                                           @last_ment = e.last.created_at.to_i
-                                                                                                                         end }.each { |t| Channel('#konsolechka').send "@#{t.user.screen_name}: #{t.text}" }
+      @last_ment ||= 0; $twi.mentions_timeline(count: 3).select { |e| e.created_at.to_i > @last_ment }.reverse.tap do |e|
+                          @last_ment = e.last.created_at.to_i unless e.empty?
+                        end .each { |t| Channel('#konsolechka').send "@#{t.user.screen_name}: #{t.text}" }
     end
 
     Thread.new do
@@ -273,53 +269,74 @@ k = Cinch::Bot.new do
         open("https://www.googleapis.com/customsearch/v1?q=#{t}&cx=YOUR_CX_KEY&searchType=image&key=YOUR_KEY&num=1&safe=off").read
       ).dig('items', 0, 'link')
       if link_check.nil?
-
         'К сожалению, по вашему запросу ничего не найдено!'.ubernation_days
       else
 
         link_result = URI(link_check)
 
+        original_link = link_check
 
-          link_check = link_result.scheme + '://' + SimpleIDN.to_unicode(link_result.host)
+        link_check = link_result.scheme + '://' + SimpleIDN.to_unicode(link_result.host)
 
-          unless link_result.path.nil?
-            link_check = link_check + CGI.unescape(link_result.path).gsub(/\s/, '%20')
-          end
+        link_check += CGI.unescape(link_result.path).gsub(/\s/, '%20') unless link_result.path.nil?
 
-          unless link_result.query.nil?
-            link_check = link_check + '?' + CGI.unescape(link_result.query).gsub(/\s/, '%20')
-          end
+        link_check = link_check + '?' + CGI.unescape(link_result.query).gsub(/\s/, '%20') unless link_result.query.nil?
 
-          unless link_result.fragment.nil?
-            link_check = link_check + '#' + CGI.unescape(link_result.fragment).gsub(/\s/, '%20')
-          end
+        unless link_result.fragment.nil?
+          link_check = link_check + '#' + CGI.unescape(link_result.fragment).gsub(/\s/, '%20')
+        end
 
-          link_final = if link_check.length > 100
-            # link_final = "["+link_check.posyl_v_googl+"] "+link_check
-            link_check
-          else
-            link_check
-                       end
-          link_final
+        link_final = if link_check.length > 100
+                       link_final = '[' + original_link.ukorachivatel + '] ' + link_check
+                     else
+                       link_check
+        end
+
+        link_final
     end
     end
 
     def praz
       praz_date = Time.now.to_s
       praz_date = DateTime.parse(praz_date).strftime('%Y-%-m-%-d')
-      Nokogiri.parse(open('https://www.calend.ru/holidays/' + praz_date + '/').read).search('div.caption>span.title>a').map(&:text)
+      a = Mechanize.new
+
+      a.max_history = 1
+      a.max_file_buffer = 65_535
+      a.redirection_limit = 3
+      a.idle_timeout = 1
+      a.ignore_bad_chunking = true
+      a.keep_alive = false
+      a.open_timeout = 3
+      a.read_timeout = 4
+      a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
+
+      a.get('https://www.calend.ru/holidays/' + praz_date + '/')
+
+      a.page.search('div.caption>span.title>a').map(&:text)
     end
 
     def kmp
-      Nokogiri.parse(open('http://killpls.me/random/', allow_redirections: :all).read).search('#stories')[0].search('div.row > div.col-xs-12').map(&:text)[0].strip.gsub(/\s+/, ' ').ubernation_days
+      a = Mechanize.new
+
+      a.max_history = 1
+      a.max_file_buffer = 65_535
+      a.redirection_limit = 3
+      a.idle_timeout = 1
+      a.ignore_bad_chunking = true
+      a.keep_alive = false
+      a.open_timeout = 3
+      a.read_timeout = 4
+      a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
+      a.get('http://killpls.me/random/').page.search('#stories')[0].search('div.row > div.col-xs-12').map(&:text)[0].strip.gsub(/\s+/, ' ').ubernation_days
     end
   end
 
-   on(:message, /Консолька, дистрибутивы/) {|m| a = Nokogiri.parse(open('https://distrowatch.com/').read); m.reply a.search('.phr2').first(10).zip(a.search('.phr3')).map {|e| "#{e[0].text.ubernation_days}: #{e[1].text.ubernation_days}" }.join("\n") }
-  
-   on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*совет/i) do |m|
-     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-       m.reply HTMLEntities.new.decode(JSON.parse(open('http://fucking-great-advice.ru/api/random').read)['text']).gsub(/\sблять\s/, ', блять, ').ubernation_days
+  on(:message, /Консолька, дистрибутивы/) { |m| a = Mechanize.new; a.get('https://distrowatch.com/'); m.reply a.page.search('.phr2').first(10).zip(a.page.search('.phr3')).map { |e| "#{e[0].text.ubernation_days}: #{e[1].text.ubernation_days}" }.join("\n") }
+
+  on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*совет/i) do |m|
+    unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
+      m.reply HTMLEntities.new.decode(JSON.parse(open('http://fucking-great-advice.ru/api/random').read)['text']).gsub(/\sблять\s/, ', блять, ').ubernation_days
      end
   end
 
@@ -331,7 +348,6 @@ k = Cinch::Bot.new do
     end
   end
 
-
   on(:message, /^!tr (.+)/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
 
@@ -342,14 +358,13 @@ k = Cinch::Bot.new do
 
       else
 
-
         n1 = n.match(/^!tr (.+)\s*$/i)&.captures&.first
 
-        if n1.match?(/.*(\p{Cyrillic}).*/i)
-          n2 = 'en'
-        else
-          n2 = 'ru'
-        end
+        n2 = if n1.match?(/.*(\p{Cyrillic}).*/i)
+               'en'
+             else
+               'ru'
+             end
 
       end
 
@@ -361,8 +376,6 @@ k = Cinch::Bot.new do
     end
   end
 
-
-
   on(:message, /!gt (>[^>]+.*)/) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       r = n.scan(/>[^>]+/)
@@ -370,11 +383,11 @@ k = Cinch::Bot.new do
         answ = 'Слишком много гринтекста!'.ubernation_days
       else
         answ = ''
-       unless r.empty?
-         r.map do |e|
-          answ = answ + "\00303" + e.ubernation_days.gsub(/> /, '>') + "\n"
-         end
-       end
+        unless r.empty?
+          r.map do |e|
+            answ = answ + "\00303" + e.ubernation_days.gsub(/> /, '>') + "\n"
+          end
+        end
       end
       m.reply answ
     end
@@ -387,11 +400,10 @@ k = Cinch::Bot.new do
         answ = 'Слишком много гринтекста!'.ubernation_days
       else
         unless r.empty?
-         answ = "\00303>#{Time.now.year}\n"
-         r.map do |e|
- 
-          answ = answ + "\00303" + e.ubernation_days.gsub(/> /, '>') + "\n"
-         end
+          answ = "\00303>#{Time.now.year}\n"
+          r.map do |e|
+            answ = answ + "\00303" + e.ubernation_days.gsub(/> /, '>') + "\n"
+          end
         end
       end
       m.reply answ
@@ -411,7 +423,7 @@ k = Cinch::Bot.new do
   on(:message, /^.*ACTION погладил (?:Konsolech|Консол)(?:ь|еч|)(?:ka|ку).*/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       @gladit_variants = ['извернулась и цапнула пидора #NICKNAME# за руку!', 'заурчала', 'слегка мурлыкнула', 'отскочила и зашипела на #NICKNAME#', 'посмотрела на #NICKNAME# как на пустое место', 'свернулась в клубочек', 'продолжила хранить молчание', 'нажаловалась на домогательства мочератору']
-      m.action_reply((@gladit_variants.sample.ubernation_days).to_s.gsub(/#NICKNAME#/, (m.user.nick).to_s))
+      m.action_reply(@gladit_variants.sample.ubernation_days.to_s.gsub(/#NICKNAME#/, m.user.nick.to_s))
     end
   end
 
@@ -421,7 +433,7 @@ k = Cinch::Bot.new do
         puts "Матч по нику\n"
         nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
         puts "Ник #{nick}\n"
-        if m.channel.users.map {|e| e[0].nick }.include?(nick)
+        if m.channel.users.map { |e| e[0].nick }.include?(nick)
           to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
           m.reply nick + ': ' + gi(to_find)
         else
@@ -432,7 +444,6 @@ k = Cinch::Bot.new do
       end
     end
   end
-
 
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), праздники/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
@@ -453,7 +464,6 @@ k = Cinch::Bot.new do
     end
   end
 
-
   on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), когда (.+)\?/i) do |m, _n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
 
@@ -466,17 +476,21 @@ k = Cinch::Bot.new do
     end
   end
 
-
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s* найди (.+)/i) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if (user = User(n.strip)).unknown?
         m.reply "404: юзер #{n} не найден)".ubernation_days
       else
-        h = user.host.match?(/kiwiirc/i) ? user.host.match(/\d+\.\d+\.\d+\.\d+/)[0] : user.host
-        h = h[/\d+-\d+-\d+-\d+/] ? h[/\d+-\d+-\d+-\d+/].tr('-', '.') : h
+        if (user.host.match?(/unaffiliated/i))
+        m.reply "Спрятан за unaffiliated".ubernation_days
+        else
+        hn = user.host.match?(/kiwiirc/i) ? user.host.match(/\d+\.\d+\.\d+\.\d+/)[0] : user.host
+        hn = hn[/\d+-\d+-\d+-\d+/] ? hn[/\d+-\d+-\d+-\d+/].tr('-', '.') : hn
+        h = Resolv.getaddress(hn)
         db = SypexGeo::Database.new('./SxGeoCity.dat')
         location = db.query(h)
         m.reply "#{location.country} :: #{location.city}".ubernation_days
+        end
       end
     end
   end
@@ -536,130 +550,117 @@ k = Cinch::Bot.new do
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
         puts "Матч по нику\n"
-         nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
-         puts "Ник #{nick}\n"
-         if m.channel.users.map {|e| e[0].nick }.include?(nick)
-           to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
-             puts "To find #{to_find}\n"
-             to_find = URI.encode(to_find)
-             resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{to_find}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
-             if resp.dig('items', 0, 'link').nil?
-   
-               m.reply( nick + ': ' + 'К сожалению, по вашему запросу ничего не найдено!'.ubernation_days)
-               next
-   
-             end
-             link_result = URI(resp.dig('items', 0, 'link'))
+        nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
+        puts "Ник #{nick}\n"
+        if m.channel.users.map { |e| e[0].nick }.include?(nick)
+          to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
+          puts "To find #{to_find}\n"
+          to_find = URI.encode(to_find)
+          resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{to_find}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
+          if resp.dig('items', 0, 'link').nil?
 
+            m.reply(nick + ': ' + 'К сожалению, по вашему запросу ничего не найдено!'.ubernation_days)
+            next
 
-             link_check = link_result.scheme + '://' + SimpleIDN.to_unicode(link_result.host)
+          end
+          link_result = URI(resp.dig('items', 0, 'link'))
+          original_link = resp.dig('items', 0, 'link')
 
-             unless link_result.path.nil?
-               link_check = link_check + CGI.unescape(link_result.path).gsub(/\s/, '%20')
-             end
+          link_check = link_result.scheme + '://' + SimpleIDN.to_unicode(link_result.host)
 
-             unless link_result.query.nil?
-               link_check = link_check + '?' + CGI.unescape(link_result.query).gsub(/\s/, '%20')
-             end
+          link_check += CGI.unescape(link_result.path).gsub(/\s/, '%20') unless link_result.path.nil?
 
-             unless link_result.fragment.nil?
-               link_check = link_check + '#' + CGI.unescape(link_result.fragment).gsub(/\s/, '%20')
-             end
+          unless link_result.query.nil?
+            link_check = link_check + '?' + CGI.unescape(link_result.query).gsub(/\s/, '%20')
+          end
 
+          unless link_result.fragment.nil?
+            link_check = link_check + '#' + CGI.unescape(link_result.fragment).gsub(/\s/, '%20')
+          end
 
           # puts URI.decode(resp.dig('items', 0, 'link'))
 
-             link_final = if link_check.length > 100
-               # link_final = "["+link_check.posyl_v_googl+"] "+link_check
-               link_check
-             else
-               link_check
-                          end
-             res = nick + ': ' + resp.dig('items', 0, 'title').ubernation_days + ' - ' + link_final
+          link_final = if link_check.length > 100
+                         link_final = '[' + original_link.ukorachivatel + '] ' + link_check
+                       else
+                         link_check
+                       end
+          res = nick + ': ' + resp.dig('items', 0, 'title').ubernation_days + ' - ' + link_final
           # out = URI::decode(URI::decode(res['url'].force_encoding("utf-8"))).gsub(/ /, "%20")
           # m.reply "#{Sanitize.fragment(res['title'])}: #{out}"
-             m.reply res
-         else
+          m.reply res
+        else
           n = URI.encode(n)
-             resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
-             if resp.dig('items', 0, 'link').nil?
-   
-               m.reply ('К сожалению, по вашему запросу ничего не найдено!'.ubernation_days)
-               next
-   
-             end
+          resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
+          if resp.dig('items', 0, 'link').nil?
 
+            m.reply 'К сожалению, по вашему запросу ничего не найдено!'.ubernation_days
+            next
 
-             link_result = URI(resp.dig('items', 0, 'link'))
+          end
 
+          link_result = URI(resp.dig('items', 0, 'link'))
 
-             link_check = link_result.scheme + '://' + SimpleIDN.to_unicode(link_result.host)
+          original_link = resp.dig('items', 0, 'link')
 
-             unless link_result.path.nil?
-               link_check = link_check + CGI.unescape(link_result.path).gsub(/\s/, '%20')
-             end
+          link_check = link_result.scheme + '://' + SimpleIDN.to_unicode(link_result.host)
 
-             unless link_result.query.nil?
-               link_check = link_check + '?' + CGI.unescape(link_result.query).gsub(/\s/, '%20')
-             end
+          link_check += CGI.unescape(link_result.path).gsub(/\s/, '%20') unless link_result.path.nil?
 
-             unless link_result.fragment.nil?
-               link_check = link_check + '#' + CGI.unescape(link_result.fragment).gsub(/\s/, '%20')
-             end
+          unless link_result.query.nil?
+            link_check = link_check + '?' + CGI.unescape(link_result.query).gsub(/\s/, '%20')
+          end
 
+          unless link_result.fragment.nil?
+            link_check = link_check + '#' + CGI.unescape(link_result.fragment).gsub(/\s/, '%20')
+          end
 
-             puts URI.decode(resp.dig('items', 0, 'link'))
-             link_final = if link_check.length > 100
-               # link_final = "["+link_check.posyl_v_googl+"] "+link_check
-               link_check
-             else
-               link_check
-                          end
-             res = link_final + ' - ' + resp.dig('items', 0, 'title').ubernation_days
+          puts URI.decode(resp.dig('items', 0, 'link'))
+          link_final = if link_check.length > 100
+                         link_final = '[' + original_link.ukorachivatel + '] ' + link_check
+                       else
+                         link_check
+                       end
+          res = link_final + ' - ' + resp.dig('items', 0, 'title').ubernation_days
           # out = URI::decode(URI::decode(res['url'].force_encoding("utf-8"))).gsub(/ /, "%20")
           # m.reply "#{Sanitize.fragment(res['title'])}: #{out}"
-             m.reply res
-        end
+          m.reply res
+       end
       else
         puts "Нет матча по нику\n"
-         n = URI.encode(n)
-         resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
-         puts "https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off"
-         if resp.dig('items', 0, 'link').nil?
+        n = URI.encode(n)
+        resp = JSON.parse(open("https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off").read)
+        puts "https://www.googleapis.com/customsearch/v1?q=#{n}&cx=Your_CX&num=1&key=Your_Key&safe=off"
+        if resp.dig('items', 0, 'link').nil?
 
-           m.reply ('К сожалению, по вашему запросу ничего не найдено!'.ubernation_days)
-           next
+          m.reply 'К сожалению, по вашему запросу ничего не найдено!'.ubernation_days
+          next
 
-         end
+        end
 
-         link_result = URI(resp.dig('items', 0, 'link'))
+        link_result = URI(resp.dig('items', 0, 'link'))
 
+        original_link = resp.dig('items', 0, 'link')
 
-         link_check = link_result.scheme + '://' + SimpleIDN.to_unicode(link_result.host)
+        link_check = link_result.scheme + '://' + SimpleIDN.to_unicode(link_result.host)
 
-         unless link_result.path.nil?
-           link_check = link_check + CGI.unescape(link_result.path).gsub(/\s/, '%20')
-         end
+        link_check += CGI.unescape(link_result.path).gsub(/\s/, '%20') unless link_result.path.nil?
 
-         unless link_result.query.nil?
-           link_check = link_check + '?' + CGI.unescape(link_result.query).gsub(/\s/, '%20')
-         end
+        link_check = link_check + '?' + CGI.unescape(link_result.query).gsub(/\s/, '%20') unless link_result.query.nil?
 
-         unless link_result.fragment.nil?
-           link_check = link_check + '#' + CGI.unescape(link_result.fragment).gsub(/\s/, '%20')
-         end
+        unless link_result.fragment.nil?
+          link_check = link_check + '#' + CGI.unescape(link_result.fragment).gsub(/\s/, '%20')
+        end
 
-
-         link_final = if link_check.length > 100
-           # link_final = "["+link_check.posyl_v_googl+"] "+link_check
-           link_check
-         else
-           link_check
-                      end
-         res = link_final + ' - ' + resp.dig('items', 0, 'title').ubernation_days
+        link_final = if link_check.length > 100
+                       link_final = '[' + original_link.ukorachivatel + '] ' + link_check
+                     else
+                       link_check
+                     end
+        res = link_final + ' - ' + resp.dig('items', 0, 'title').ubernation_days
         # out = URI::decode(URI::decode(res['url'].force_encoding("utf-8"))).gsub(/ /, "%20")
         # m.reply "#{Sanitize.fragment(res['title'])}: #{out}"
-         m.reply res
+        m.reply res
       end
     end
   end
@@ -681,16 +682,16 @@ k = Cinch::Bot.new do
 
       if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
         puts "Матч по нику\n"
-         nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
-         puts "Ник #{nick}\n"
-         if m.channel.users.map {|e| e[0].nick }.include?(nick)
-           to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
-           a.get("https://yandex.ru/search/?text=#{to_find}")
-           m.reply nick + ': ' + "#{a.page.search('.organic__title-wrapper > a')[0].text.ubernation_days} - #{a.page.search('.organic__title-wrapper > a')[0][:href]}"
-         else
-           a.get("https://yandex.ru/search/?text=#{n}")
-           m.reply "#{a.page.search('.organic__title-wrapper > a')[0].text.ubernation_days} - #{a.page.search('.organic__title-wrapper > a')[0][:href]}"
-         end
+        nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
+        puts "Ник #{nick}\n"
+        if m.channel.users.map { |e| e[0].nick }.include?(nick)
+          to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
+          a.get("https://yandex.ru/search/?text=#{to_find}")
+          m.reply nick + ': ' + "#{a.page.search('.organic__title-wrapper > a')[0].text.ubernation_days} - #{a.page.search('.organic__title-wrapper > a')[0][:href]}"
+        else
+          a.get("https://yandex.ru/search/?text=#{n}")
+          m.reply "#{a.page.search('.organic__title-wrapper > a')[0].text.ubernation_days} - #{a.page.search('.organic__title-wrapper > a')[0][:href]}"
+        end
       else
         a.get("https://yandex.ru/search/?text=#{n}")
         m.reply "#{a.page.search('.organic__title-wrapper > a')[0].text.ubernation_days} - #{a.page.search('.organic__title-wrapper > a')[0][:href]}"
@@ -703,46 +704,88 @@ k = Cinch::Bot.new do
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if n.match?(/.* ?> ?[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/i)
         puts "Матч по нику\n"
-         nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
-         puts "Ник #{nick}\n"
-         if m.channel.users.map {|e| e[0].nick }.include?(nick)
-           to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
-             query = URI.escape(to_find)
-             page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
-             link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
-             result_url = if link_check.length > 100
-               link_check
-             else
-               link_check
-                          end
-             result_text = page.search('.results .web-result .result__a')[0].text
-             result = nick + ': ' + result_text.ubernation_days + ' - ' + result_url
-             m.reply result
-         else
-           query = URI.escape(n)
-             page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
-             link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
-             result_url = if link_check.length > 100
-               link_check
-             else
-               link_check
-                          end
-             result_text = page.search('.results .web-result .result__a')[0].text
-             result = result_url + ' - ' + result_text.ubernation_days
-             m.reply result
-         end
+        nick = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[2]
+        puts "Ник #{nick}\n"
+        if m.channel.users.map { |e| e[0].nick }.include?(nick)
+          to_find = n.match(/(.*) ?> ?([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)/i)[1]
+          query = URI.escape(to_find)
+          a = Mechanize.new
+
+          a.max_history = 1
+          a.max_file_buffer = 65_535
+          a.redirection_limit = 3
+          a.idle_timeout = 1
+          a.ignore_bad_chunking = true
+          a.keep_alive = false
+          a.open_timeout = 3
+          a.read_timeout = 4
+          a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
+
+          a.get("https://duckduckgo.com/html/?q=#{query}")
+          link_check = URI.decode(a.page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
+          original_link = a.page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1]
+
+          result_url = if link_check.length > 100
+                         result_url = '[' + original_link.ukorachivatel + '] ' + link_check
+                       else
+                         link_check
+                       end
+          result_text = page.search('.results .web-result .result__a')[0].text
+          result = nick + ': ' + result_text.ubernation_days + ' - ' + result_url
+          m.reply result
+        else
+          query = URI.escape(n)
+          a = Mechanize.new
+
+          a.max_history = 1
+          a.max_file_buffer = 65_535
+          a.redirection_limit = 3
+          a.idle_timeout = 1
+          a.ignore_bad_chunking = true
+          a.keep_alive = false
+          a.open_timeout = 3
+          a.read_timeout = 4
+          a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
+
+          a.get("https://duckduckgo.com/html/?q=#{query}")
+
+          link_check = URI.decode(a.page.search('.result__a')[0][:href])
+          original_link = a.page.search('.result__a')[0][:href]
+          result_url = if link_check.length > 100
+                         result_url = '[' + original_link.ukorachivatel + '] ' + link_check
+                       else
+                         link_check
+                       end
+          result_text = a.page.search('.result__a')[0].text
+          result = result_url + ' - ' + result_text.ubernation_days
+          m.reply result
+        end
       else
         query = URI.escape(n)
-         page = Nokogiri.parse(open("https://duckduckgo.com/html/?q=#{query}"))
-         link_check = URI.decode(page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
-         result_url = if link_check.length > 100
-           link_check
-         else
-           link_check
-                      end
-         result_text = page.search('.results .web-result .result__a')[0].text
-         result = result_url + ' - ' + result_text.ubernation_days
-         m.reply result
+        a = Mechanize.new
+
+        a.max_history = 1
+        a.max_file_buffer = 65_535
+        a.redirection_limit = 3
+        a.idle_timeout = 1
+        a.ignore_bad_chunking = true
+        a.keep_alive = false
+        a.open_timeout = 3
+        a.read_timeout = 4
+        a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
+
+        page = a.get("https://duckduckgo.com/html/?q=#{query}")
+        link_check = URI.decode(a.page.search('.result__a')[0][:href])
+        original_link = a.page.search('.result__a')[0][:href]
+        result_url = if link_check.length > 100
+                       result_url = '[' + original_link.ukorachivatel + '] ' + link_check
+                     # link_check
+                     else
+                       link_check
+                     end
+        result_text = a.page.search('.result__a')[0].text
+        result = result_url + ' - ' + result_text.ubernation_days
+        m.reply result
       end
     end
   end
@@ -785,9 +828,18 @@ k = Cinch::Bot.new do
 
   on :message, /^\s*(\S+)\s+хохол\?+/i do |m, nick|
     begin
-      host = User(nick).host.match(/\d+\.\d+\.\d+\.\d+/)[0]
+      if (User(nick).host.match?(/unaffiliated/i))
+        m.reply "Спрятан за unaffiliated".ubernation_days
+      else
+      hn = User(nick).host.match(/\d+\.\d+\.\d+\.\d+/)[0]
+      if hn.empty?
+        host = Resolv.getaddress(User(nick).host)
+      else
+        host = hn
+      end
       c = GeoIP.new('GeoLiteCity.dat').country(host).country_code2
       m.reply c == 'UA' ? "#{nick} хохол! Лови хохла!".ubernation_days : "#{nick} ни разу не хохол!".ubernation_days
+      end
     rescue StandardError
     end
   end
@@ -798,14 +850,19 @@ k = Cinch::Bot.new do
     end
   end
 
-
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*ищи (\p{Cyrillic}{4,})/i) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if n.match?(/хохл/i)
         hohols = m.channel.users.select do |u|
           begin
-            host = u.host.match?(/kiwiirc/i) ? u.host.match(/\d+\.\d+\.\d+\.\d+/)[0] : u.host
+            if !(u.host.match?(/unaffiliated/i))
+            puts "853 u.host:" + u.host
+            hn = u.host.match?(/kiwiirc/i) ? u.host.match(/\d+\.\d+\.\d+\.\d+/)[0] : u.host
+            puts "851 hn:" + hn
+            host = Resolv.getaddress(hn)
+            puts "853 host:" + host
             GeoIP.new('GeoLiteCity.dat').country(host).country_code2 == 'UA' and !$no_highlight_nicks.include?(u.nick)
+            end
           rescue StandardError
           end
         end.map { |u| u[0].nick }
@@ -814,23 +871,32 @@ k = Cinch::Bot.new do
         n = n.gsub(/ов$/, 'ÜÜÜ').gsub(/ей$/, 'ьÜÜÜ').gsub(/ев$/, 'йÜÜÜ').gsub(/их$/, 'ийÜÜÜ').gsub(/ек$/, 'каÜÜÜ').gsub(/ак$/, 'акаÜÜÜ').gsub(/ых$/, 'ыеÜÜÜ').gsub(/ÜÜÜ/, '')
         random_search = []
         m.channel.users.each do |u|
-          if rand < 0.04
-            if $no_highlight_nicks.include?(u[0].nick)
-              random_search << u[0].nick.dup.insert(1, '‍')
-            else
-              random_search << u[0].nick
-            end
+          next unless rand < 0.04
 
-          end
+          random_search << if $no_highlight_nicks.include?(u[0].nick)
+                             u[0].nick.dup.insert(1, '‍')
+                           else
+                             u[0].nick
+                           end
         end
         n = URI.encode(n)
-        doc = Nokogiri.parse(open("https://ws3.morpher.ru/russian/declension?s=#{n}").read)
+        a = Mechanize.new
+
+        a.max_history = 1
+        a.max_file_buffer = 65_535
+        a.redirection_limit = 3
+        a.idle_timeout = 1
+        a.ignore_bad_chunking = true
+        a.keep_alive = false
+        a.open_timeout = 3
+        a.read_timeout = 4
+        a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
+
+        a.get("https://ws3.morpher.ru/russian/declension?s=#{n}")
         puts "\nСсылка: https://ws3.morpher.ru/russian/declension?s=#{n}\n"
-        puts doc.to_s
-        sklonen = doc.search('И').map(&:text)
-        if sklonen.empty?
-          sklonen = doc.search('В').map(&:text)
-        end
+        puts a.page.to_s
+        sklonen = a.page.search('И').map(&:text)
+        sklonen = a.page.search('В').map(&:text) if sklonen.empty?
         ans1 = sklonen[0].capitalize.to_s + ' не обнаружены!'
         ans2 = sklonen[0].capitalize.to_s + " обнаружены: #{random_search.join(', ')}"
         m.reply random_search.empty? ? ("\00303" + ans1.ubernation_days + "\n") : ("\00303" + ans2.ubernation_days + "\n")
@@ -838,14 +904,23 @@ k = Cinch::Bot.new do
     end
   end
 
-
-
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*ищи бульбашей/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       bulbs = m.channel.users.select do |u|
         begin
-          host = u.host.match(/\d+\.\d+\.\d+\.\d+/)[0]
+           if !(u.host.match?(/unaffiliated/i))
+            puts "893 u.host:" + u.host
+          hn = u.host.match(/\d+\.\d+\.\d+\.\d+/)[0]
+            puts "894 hn:" + hn
+            
+          if hn.empty?
+            host = Resolv.getaddress(u.host)
+          else
+            host = hn
+          end
+          puts "902 host:" + host
           GeoIP.new('GeoLiteCity.dat').country(host).country_code2 == 'BY' and !$no_highlight_nicks.include?(u.nick)
+          end
         rescue StandardError
         end
       end.map { |u| u[0].nick }
@@ -893,8 +968,18 @@ k = Cinch::Bot.new do
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       norus = m.channel.users.select do |u|
         begin
-          host = u.host.match(/\d+\.\d+\.\d+\.\d+/)[0]
+          if !(u.host.match?(/unaffiliated/i))
+          puts "955 u.host:"+u.host
+          hn = u.host.match(/\d+\.\d+\.\d+\.\d+/)[0]
+          puts "957 hn:"+hn
+          if hn.empty?
+            host = Resolv.getaddress(u.host)
+          else
+            host = hn
+          end
+          puts "963 host:"+host
           GeoIP.new('GeoLiteCity.dat').country(host).country_code2 != 'RU' and !$no_highlight_nicks.include?(u.nick)
+          end
         rescue StandardError
         end
       end.map { |u| u[0].nick }
@@ -984,7 +1069,7 @@ k = Cinch::Bot.new do
         answers = ['Конечно же', 'Мне кажется,', 'Я считаю,']
         answers2 = ['или', 'ну или']
         answers3 = ['!', '.', '...']
-        final_answer = "#{answers.sample} " + (our_answer_array[0]).to_s.zamena_mestoimeniy + " #{answers2.sample} " + (our_answer_array[1]).to_s.zamena_mestoimeniy + (answers3.sample).to_s
+        final_answer = "#{answers.sample} " + (our_answer_array[0]).to_s.zamena_mestoimeniy + " #{answers2.sample} " + (our_answer_array[1]).to_s.zamena_mestoimeniy + answers3.sample.to_s
         m.safe_reply(final_answer.ubernation_days)
 
       else
@@ -992,16 +1077,11 @@ k = Cinch::Bot.new do
         our_answer_array.push(our_source_array.delete_at(Random.new(Digest::MD5.hexdigest(Time.now.strftime('%d/%m/%Y') + m.user.nick + a1).to_i(16).to_f).rand(our_source_array.count)))
         answers = ['Конечно же', 'Мне кажется,', 'Я считаю,']
         answers2 = ['!', '.', '...']
-        final_answer = "#{answers.sample} " + (our_answer_array[0]).to_s.zamena_mestoimeniy + (answers2.sample).to_s
+        final_answer = "#{answers.sample} " + (our_answer_array[0]).to_s.zamena_mestoimeniy + answers2.sample.to_s
         m.safe_reply(final_answer.ubernation_days)
       end
     end
   end
-
-
-
-
-
 
   on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*(.+) ли (.+)\?[^\s]*/i do |m, a1, a2|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || a1.match?(/(^ ?| )а( | ?$)/) || a2.match?(/(^ ?| )или( | ?$)/)
@@ -1049,7 +1129,6 @@ k = Cinch::Bot.new do
     end
   end
 
-
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*посоветуй кинцо/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       @movies ||= File.readlines('movies.txt')
@@ -1065,7 +1144,6 @@ k = Cinch::Bot.new do
 
     end
   end
-
 
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*профилируй память/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
@@ -1083,8 +1161,6 @@ k = Cinch::Bot.new do
     end
   end
 
-
-
   on :message, %r{((?:http|https)://\S+)}i do |m, n|
     break unless m.channel
 
@@ -1094,7 +1170,6 @@ k = Cinch::Bot.new do
       m.safe_reply(@megumin_variants.sample).to_s.ubernation_days
     end
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || (n.include? 'chlor.ga') || n.match?(%r{.*2ch.*news/res/.*}i)
-
 
       url = Addressable::URI.parse(n)
       url.host = SimpleIDN.to_ascii(url.host)
@@ -1122,10 +1197,70 @@ k = Cinch::Bot.new do
         ActionView::Base.new
         title = ''
         if resp.instance_of?(Mechanize::File)
-          title << "Файл (#{ActionView::Base.new.number_to_human_size(resp.response['content-length']).gsub(/\bКБ\b/, 'КиБ').gsub(/\bМБ\b/, 'МиБ')})"
+          if (resp.response['content-type'].match(%r{(\w+)/})[1] == 'video')
+
+            ffmpeg_output = `ffprobe -i "#{resp.uri.to_s}" -show_entries stream=width,height,codec_name,duration -select_streams v:0 -v 0 -hide_banner -print_format json`
+            
+            video_info = JSON.parse(ffmpeg_output)["streams"][0]
+            
+            if (video_info['codec_name'])
+              type = video_info['codec_name'].to_s
+            else
+              type = resp.response['content-type'].match(%r{/([a-zA-Z\-\.\+]+)})[1]
+            end
+            
+            video_duration = distance_of_time_in_words(video_info['duration'].to_f.round())
+            video_height = video_info['height']
+            video_width = video_info['width']
+            title << "Видео (#{video_duration}, #{video_width}×#{video_height}, #{type}, #{ActionView::Base.new.number_to_human_size(resp.response['content-length']).gsub(/\bКБ\b/, 'КиБ').gsub(/\bМБ\b/, 'МиБ')})"
+          elsif(resp.response['content-type'].match(%r{(\w+)/})[1] == 'audio')
+            
+            ffmpeg_output = `ffprobe -i "#{resp.uri.to_s}" -show_entries stream=sample_rate,channels,codec_name,channel_layout,bit_rate,duration -select_streams a:0 -v 0 -hide_banner -print_format json`
+
+            audio_info = JSON.parse(ffmpeg_output)["streams"][0]
+            
+            if (audio_info['codec_name'])
+              type = audio_info['codec_name'].to_s
+            else
+              type = resp.response['content-type'].match(%r{/([a-zA-Z\-\.\+]+)})[1]
+            end
+            
+            if (audio_info['duration'].to_f>0)
+              audio_duration = distance_of_time_in_words(audio_info['duration'].to_f.round())
+            else
+              audio_duration = 'Неизв.'
+            end
+            
+            if (audio_info['duration'].to_f>0)
+              audio_bit_rate = ActionView::Base.new.number_to_human_size(((resp.response['content-length'].to_f*8)/audio_info['duration'].to_f).round()).gsub(/\bКБ\b/, 'КиБ/с').gsub(/\bМБ\b/, 'МиБ/с')
+            else
+              if (audio_info['bit_rate'].to_f>0)
+                audio_bit_rate = ActionView::Base.new.number_to_human_size(audio_info['bit_rate'].to_f.round()).gsub(/\bКБ\b/, 'КиБ/с').gsub(/\bМБ\b/, 'МиБ/с')
+              else
+                audio_bit_rate = 'Неизв.'
+              end
+            end
+            if (audio_info['channels'].to_i>1)
+              if (audio_info['channel_layout'])
+                audio_channel_layout = audio_info['channel_layout']
+              else
+                if (audio_info['channels'].to_i==2)
+                  audio_channel_layout = 'stereo'
+                else
+                  audio_channel_layout = audio_info['channels'].to_s
+                end
+              end
+            else
+              audio_channel_layout = 'mono'
+            end
+            audio_sample_rate = audio_info['sample_rate']
+            title << "Аудио (#{audio_duration}, #{audio_channel_layout}, #{audio_sample_rate} Hz, #{audio_bit_rate}, #{type}, #{ActionView::Base.new.number_to_human_size(resp.response['content-length']).gsub(/\bКБ\b/, 'КиБ').gsub(/\bМБ\b/, 'МиБ')})"
+          else
+            title << "Файл (#{ActionView::Base.new.number_to_human_size(resp.response['content-length']).gsub(/\bКБ\b/, 'КиБ').gsub(/\bМБ\b/, 'МиБ')})"
+          end
         else
           dims = FastImage.size(resp.uri.to_s)
-          type = resp.response['content-type'].match(%r{/(\w+)})[1]
+          type = resp.response['content-type'].match(%r{/([a-zA-Z\-\.\+]+)})[1]
           # length = ActionView::Base.new.number_to_human_size(resp.response['content-length'])
           length = ActionView::Base.new.number_to_human_size(FastImage.new(resp.uri.to_s).content_length).gsub(/\bКБ\b/, 'КиБ').gsub(/\bМБ\b/, 'МиБ')
           title << "Изображение (#{length}, #{dims[0]}×#{dims[1]}, #{type})"
@@ -1140,103 +1275,90 @@ k = Cinch::Bot.new do
             title = agent.page.search('meta[name="title"]')[0][:content].strip.gsub(/ - YouTube/, '').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
           end
           view_count_tmp = agent.page.search('.watch-view-count').text.gsub(/ views/, '')
-          if view_count_tmp.length > 0
-            view_count = view_count_tmp.tr('^0-9', '').to_i
-          end
+          view_count = view_count_tmp.tr('^0-9', '').to_i if view_count_tmp.length > 0
           watcher_live_names = %w[зрителей зритель зрителя]
           watcher_names = %w[просмотров просмотр просмотра]
 
-          unless (view_count.is_a? Integer)
+          unless view_count.is_a? Integer
             view_count_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer":{"viewCount":{"simpleText":"([0-9\.,\ ]+) (?:views|Aufrufe)"}/im)
-             if view_count_tmp.length > 0
-               view_count = view_count_tmp[0][0].tr('^0-9', '').to_i
-             end
+            view_count = view_count_tmp[0][0].tr('^0-9', '').to_i if view_count_tmp.length > 0
           end
 
-          unless (view_count.is_a? Integer)
+          unless view_count.is_a? Integer
             view_count_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer\\":{\\"viewCount\\":{\\"simpleText\\":\\"([0-9\.,\ ]+) /im)
-             if view_count_tmp.length > 0
-               view_count = view_count_tmp[0][0].tr('^0-9', '').to_i
-             end
+            view_count = view_count_tmp[0][0].tr('^0-9', '').to_i if view_count_tmp.length > 0
           end
 
           if !(view_count.is_a? Integer)
             view_count_num_tmp = agent.page.search('script').text.scan(/viewCount\\":\{\\"runs\\":\[\{\\"text\\":\\"(?:Aktuell )?([0-9\.,\ ]+) (?:watching now|Zuschauer)\\"\}/im)
 
-             if view_count_num_tmp.length > 0
-               view_count_num = view_count_num_tmp[0][0].tr('^0-9', '').to_i
-             end
+            view_count_num = view_count_num_tmp[0][0].tr('^0-9', '').to_i if view_count_num_tmp.length > 0
 
-             unless (view_count_num.is_a? Integer)
-               view_count_num_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer":{"viewCount":{"runs":\[{"text":"(?:[^\ 0-9]+ )?([0-9\.,\ ]+) /im)
-                if view_count_num_tmp.length > 0
-                  view_count_num = view_count_num_tmp[0][0].tr('^0-9', '').to_i
-                end
-             end
+            unless view_count_num.is_a? Integer
+              view_count_num_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer":{"viewCount":{"runs":\[{"text":"(?:[^\ 0-9]+ )?([0-9\.,\ ]+) /im)
+              view_count_num = view_count_num_tmp[0][0].tr('^0-9', '').to_i if view_count_num_tmp.length > 0
+            end
 
-             w_index = view_count_num % 100
+            w_index = view_count_num % 100
 
-             if w_index >= 11 && w_index <= 14
-               a_index = 0
-             else
-               if (w_index % 10) < 5
-                 if (w_index % 10) > 2
-                   a_index = 2
-                 else
-                   a_index = w_index % 10
-                 end
-               else
-                 a_index = 0
-               end
+            a_index = if w_index >= 11 && w_index <= 14
+                        0
+                      else
+                        if (w_index % 10) < 5
+                          if (w_index % 10) > 2
+                            2
+                          else
+                            w_index % 10
+                                    end
+                        else
+                          0
+                                  end
 
-             end
+                      end
 
-             view_count_str =  number_with_delimiter(view_count_num, delimiter: ',')
-             watcher_live_name = watcher_live_names[a_index]
+            view_count_str =  number_with_delimiter(view_count_num, delimiter: ',')
+            watcher_live_name = watcher_live_names[a_index]
 
-             title = title.ubernation_days + ' ' + "(#{view_count_str} #{watcher_live_name})".ubernation_days
+            title = title.ubernation_days + ' ' + "(#{view_count_str} #{watcher_live_name})".ubernation_days
 
           else
             view_count_num = view_count
 
+            w_index = view_count_num % 100
 
-             w_index = view_count_num % 100
+            a_index = if w_index >= 11 && w_index <= 14
+                        0
+                      else
+                        if (w_index % 10) < 5
+                          if (w_index % 10) > 2
+                            2
+                          else
+                            w_index % 10
+                                    end
+                        else
+                          0
+                                  end
 
-             if w_index >= 11 && w_index <= 14
-               a_index = 0
-             else
-               if (w_index % 10) < 5
-                 if (w_index % 10) > 2
-                   a_index = 2
-                 else
-                   a_index = w_index % 10
-                 end
-               else
-                 a_index = 0
-               end
+                      end
 
-             end
+            view_count_str = number_with_delimiter(view_count_num, delimiter: ',')
 
-             view_count_str = number_with_delimiter(view_count_num, delimiter: ',')
+            watcher_name = watcher_names[a_index]
 
-             watcher_name = watcher_names[a_index]
-
-             title = title.ubernation_days + ' ' + "(#{view_count_str} #{watcher_name})".ubernation_days
+            title = title.ubernation_days + ' ' + "(#{view_count_str} #{watcher_name})".ubernation_days
           end
 
         end
-        
-        if agent.page.uri.to_s.match?(%r{github\.com.*issues.*})
-            # https://docs.github.com/en/rest/reference/issues#get-an-issue
-            # Сюда смотреть когда регекс сломается, пример https://api.github.com/repos/matrix-org/matrix-doc/issues/1882
-            problem_status = agent.page.search('.TableObject-item').text.gsub(/\n/, ' ').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
 
-          
-             title = title.ubernation_days + ' ' + "(Status:#{problem_status})".ubernation_days
+        if agent.page.uri.to_s.match?(/github\.com.*issues.*/)
+          # https://docs.github.com/en/rest/reference/issues#get-an-issue
+          # Сюда смотреть когда регекс сломается, пример https://api.github.com/repos/matrix-org/matrix-doc/issues/1882
+          problem_status = agent.page.search('.TableObject-item').text.gsub(/\n/, ' ').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
 
+          title = title.ubernation_days + ' ' + "(Status:#{problem_status})".ubernation_days
 
         end
-        
+
         safe_title = title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').gsub(/\s+/, ' ').strip
         if safe_title.length > 400
           m.safe_reply safe_title.slice(0, 400)
@@ -1246,7 +1368,6 @@ k = Cinch::Bot.new do
       end
     end
   end
-
 
   # on :message do |m|
   #  name = m.user.nick
@@ -1301,7 +1422,7 @@ k = Cinch::Bot.new do
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if n.match?(/\A[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*\z/i)
         @tells ||= Hash.new { |h, k| h[k] = [] }
-        if m.channel.users.map {|e| e[0].nick }.include?(n)
+        if m.channel.users.map { |e| e[0].nick }.include?(n)
           if $no_highlight_nicks.include?(m.user.nick)
 
             m.reply("#{m.user.nick.dup.insert(1, '‍')}, в шары долбишься?".ubernation_days)
@@ -1314,18 +1435,16 @@ k = Cinch::Bot.new do
           if @tells[n].length >= 5
             if $no_highlight_nicks.include?(m.user.nick)
 
-
               m.reply("#{m.user.nick.dup.insert(1, '‍')}, лимит сообщений (5) достигнут.".ubernation_days)
 
             else
               m.reply("#{m.user.nick}, лимит сообщений (5) достигнут.".ubernation_days)
             end
 
-
           else
             @tells[n] << l
             m.channel.action 'скажет!'
-            File.open('tells.txt', 'w') {|f| f.puts @tells.to_json }
+            File.open('tells.txt', 'w') { |f| f.puts @tells.to_json }
           end
         end
       else
@@ -1350,8 +1469,7 @@ k = Cinch::Bot.new do
     end
   end
 
-  on(:message, /^\?([[:alnum:]]+)ша/i) {|m, n| @ysh ||= {}; (y = @ysh[n.to_s])&.send(:[], 0)&.send(:>, Time.now - 3600) && m.reply("#{n}ша этого часа -- #{y[1]}".ubernation_days) or (m.reply("И #{n}шей этого часа становится…".ubernation_days); sleep 3; @ysh[n] = [Time.now, (z = Channel('#s2ch').users.map {|u| u[0].nick }.sample)]; m.reply("#{z}! Поздравляем!".ubernation_days)) }
-
+  on(:message, /^\?([[:alnum:]]+)ша/i) { |m, n| @ysh ||= {}; (y = @ysh[n.to_s])&.send(:[], 0)&.send(:>, Time.now - 3600) && m.reply("#{n}ша этого часа -- #{y[1]}".ubernation_days) or (m.reply("И #{n}шей этого часа становится…".ubernation_days); sleep 3; @ysh[n] = [Time.now, (z = Channel('#s2ch').users.map { |u| u[0].nick }.sample)]; m.reply("#{z}! Поздравляем!".ubernation_days)) }
 
   on :join do |m|
     @logins ||= {}
@@ -1363,16 +1481,14 @@ k = Cinch::Bot.new do
     end
   end
 
-
   # ИГРА ПРО ПИДОРОВ
 
   # Инициализация на старте
 
   on :connect do
-    @bots = ['AnimeChan', 'ChirnoBot', 'coinBot', 'Konsolechka', 'Maj_Petrenko', 'Qubick', 'Sopel', 'yalb', 'urp', 'AnimeChan_', 'coinBot_', 'Konsolechka_', 'Maj_Petrenko_', 'Qubick_', 'Sopel_', 'yalb_', 'urp_']
+    @bots = %w[AnimeChan ChirnoBot coinBot Konsolechka Maj_Petrenko Qubick Sopel yalb urp AnimeChan_ coinBot_ Konsolechka_ Maj_Petrenko_ Qubick_ Sopel_ yalb_ urp_]
 
     # Загрузка состояний
-
 
     begin
       $pidors = YAML.load_file('/konsolechka/configstorage/pidors.yml')
@@ -1452,13 +1568,11 @@ k = Cinch::Bot.new do
       $no_highlight_nicks = []
     end
 
-
     begin
       $first_pidor_data = YAML.load_file('/konsolechka/configstorage/first_pidor_data.yml')
     rescue Errno::ENOENT
       $first_pidor_data = Cinch::User
     end
-
 
     Thread.new do
       sleep(10)
@@ -1468,49 +1582,46 @@ k = Cinch::Bot.new do
 
         Channel('#konsolechka').users.each do |u|
           next if @bots.include?(u[0].nick)
-          if $pidors.select {|_k, v| v[:nick] == u[0].nick } == {}
-            if $pidors.select {|_k, v| v[:host] == u[0].host } == {}
-              if $last_messages_time[u[0].nick] == nil
-                $last_messages_time[u[0].nick] = Time.now
-              end
-              $pidors[$pidors.count] = { :nick => u[0].nick, :host => u[0].host, :pidor_status => false, :chance => 25, :last_message => $last_messages_time[u[0].nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+
+          if $pidors.select { |_k, v| v[:nick] == u[0].nick } == {}
+            if $pidors.select { |_k, v| v[:host] == u[0].host } == {}
+              $last_messages_time[u[0].nick] = Time.now if $last_messages_time[u[0].nick].nil?
+              $pidors[$pidors.count] = { nick: u[0].nick, host: u[0].host, pidor_status: false, chance: 25, last_message: $last_messages_time[u[0].nick], num: $pidors.count, active: true, last_attack_time: Time.now }
             else
 
-
-              if $pidors.select {|_k, v| v[:host] == u[0].host }.count > 1
-                if $pidors.select {|_k, v| v[:host] == u[0].host }.select {|_kk, vv| vv[:pidor_status] == true }.count > 0
-                  $pidors[$pidors.count] = { :nick => u[0].nick, :host => u[0].host, :pidor_status => true, :chance => 125, :last_message => $last_messages_time[u[0].nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+              if $pidors.select { |_k, v| v[:host] == u[0].host }.count > 1
+                if $pidors.select { |_k, v| v[:host] == u[0].host }.select { |_kk, vv| vv[:pidor_status] == true }.count > 0
+                  $pidors[$pidors.count] = { nick: u[0].nick, host: u[0].host, pidor_status: true, chance: 125, last_message: $last_messages_time[u[0].nick], num: $pidors.count, active: true, last_attack_time: Time.now }
                 else
-                  $pidors[$pidors.count] = { :nick => u[0].nick, :host => u[0].host, :pidor_status => false, :chance => 25, :last_message => $last_messages_time[u[0].nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+                  $pidors[$pidors.count] = { nick: u[0].nick, host: u[0].host, pidor_status: false, chance: 25, last_message: $last_messages_time[u[0].nick], num: $pidors.count, active: true, last_attack_time: Time.now }
                 end
               else
-                $pidors[$pidors.select {|_k, v| v[:host] == u[0].host }.values.last[:num]][:nick] = u[0].nick
+                $pidors[$pidors.select { |_k, v| v[:host] == u[0].host }.values.last[:num]][:nick] = u[0].nick
               end
             end
           end
 
-          if $pidors.select {|_k, v| v[:host] == u[0].host } == {}
-            if $pidors.select {|_k, v| v[:nick] == u[0].nick } == {} || (u[0].nick != $pidors[$pidors.select {|_k, v| v[:nick] == u[0].nick }.values.last[:num]][:nick])
-              if $last_messages_time[u[0].nick] == nil
-                $last_messages_time[u[0].nick] = Time.now
-              end
-              $pidors[$pidors.count] = { :nick => u[0].nick, :host => u[0].host, :pidor_status => false, :chance => 25, :last_message => $last_messages_time[u[0].nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+          if $pidors.select { |_k, v| v[:host] == u[0].host } == {}
+            if $pidors.select { |_k, v| v[:nick] == u[0].nick } == {} || (u[0].nick != $pidors[$pidors.select { |_k, v| v[:nick] == u[0].nick }.values.last[:num]][:nick])
+              $last_messages_time[u[0].nick] = Time.now if $last_messages_time[u[0].nick].nil?
+              $pidors[$pidors.count] = { nick: u[0].nick, host: u[0].host, pidor_status: false, chance: 25, last_message: $last_messages_time[u[0].nick], num: $pidors.count, active: true, last_attack_time: Time.now }
             else
-              $pidors[$pidors.select {|_k, v| v[:nick] == u[0].nick }.values.last[:num]][:host] = u[0].host
+              $pidors[$pidors.select { |_k, v| v[:nick] == u[0].nick }.values.last[:num]][:host] = u[0].host
             end
           end
         end
 
         $pidors.each do |_ke, va|
           next if @bots.include?(va[:nick])
-          if Channel('#konsolechka').has_user?(va[:nick]) && !$pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active]
-            $pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active] = true
+
+          if Channel('#konsolechka').has_user?(va[:nick]) && !$pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active]
+            $pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active] = true
           else
-            if (!Channel('#konsolechka').has_user?(va[:nick]) && $pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active])
-              $pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active] = false
+            if !Channel('#konsolechka').has_user?(va[:nick]) && $pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active]
+              $pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active] = false
             end
           end
-          if $pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:pidor_status]
+          if $pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:pidor_status]
             if Channel('#konsolechka').has_user?(va[:nick]) && !Channel('#konsolechka').voiced?(va[:nick])
               User('ChanServ').send("VOICE #konsolechka #{va[:nick]}")
             end
@@ -1520,41 +1631,33 @@ k = Cinch::Bot.new do
             end
           end
         end
-        if $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
+        if $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
           $game_ending = true
           $game_ending_started = Time.now
           $game_started = false
-          if $no_highlight_nicks.include?($pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick])
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
-
-
+          if $no_highlight_nicks.include?($pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick])
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
 
           else
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
-
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
 
           end
-          $prev_winner = { :nick => $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick], :date => Time.now.strftime('%d.%m.%Y %H:%M'), :glavpidor => $first_pidor_data&.nick }
+          $prev_winner = { nick: $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick], date: Time.now.strftime('%d.%m.%Y %H:%M'), glavpidor: $first_pidor_data&.nick }
 
-          Channel('#konsolechka').voiced.map {|e| e.nick }.each do |u|
+          Channel('#konsolechka').voiced.map { |e| e.nick }.each do |u|
             unless @bots.include?(u)
-              if (Channel('#konsolechka').voiced?(u))
-                User('ChanServ').send("DEVOICE #konsolechka #{u}")
-              end
+              User('ChanServ').send("DEVOICE #konsolechka #{u}") if Channel('#konsolechka').voiced?(u)
             end
           end
           sleep 60
           $game_ending = false
         end
 
-
         if $game_ending
 
-          Channel('#konsolechka').voiced.map {|e| e.nick }.each do |u|
+          Channel('#konsolechka').voiced.map { |e| e.nick }.each do |u|
             unless @bots.include?(u)
-              if (Channel('#konsolechka').voiced?(u))
-                User('ChanServ').send("DEVOICE #konsolechka #{u}")
-              end
+              User('ChanServ').send("DEVOICE #konsolechka #{u}") if Channel('#konsolechka').voiced?(u)
             end
           end
           sleep 60
@@ -1564,11 +1667,9 @@ k = Cinch::Bot.new do
 
         # Убирание войсов у людей
 
-        Channel('#konsolechka').voiced.map {|e| e.nick }.each do |u|
+        Channel('#konsolechka').voiced.map { |e| e.nick }.each do |u|
           unless @bots.include?(u)
-              if (Channel('#konsolechka').voiced?(u))
-                User('ChanServ').send("DEVOICE #konsolechka #{u}")
-              end
+            User('ChanServ').send("DEVOICE #konsolechka #{u}") if Channel('#konsolechka').voiced?(u)
           end
         end
 
@@ -1577,7 +1678,7 @@ k = Cinch::Bot.new do
         Channel('#konsolechka').users.each do |u|
           # Присваивание войсов ботам
           if @bots.include?(u[0].nick)
-            User('ChanServ').send("VOICE #konsolechka #{u[0].nick}") if !(Channel('#konsolechka').voiced?(u[0].nick))
+            User('ChanServ').send("VOICE #konsolechka #{u[0].nick}") unless Channel('#konsolechka').voiced?(u[0].nick)
           end
         end
       end
@@ -1624,67 +1725,56 @@ k = Cinch::Bot.new do
 
         loop do
           $first_pidor_data = m.channel.users.to_a.sample[0]
-          if (!(@ignored_users.include?($first_pidor_data&.host) || @ignored_nicks.include?($first_pidor_data&.nick) || @bots.include?($first_pidor_data&.nick)))
+          unless @ignored_users.include?($first_pidor_data&.host) || @ignored_nicks.include?($first_pidor_data&.nick) || @bots.include?($first_pidor_data&.nick)
             break
           end
         end
 
-        if $last_messages_time[$first_pidor_data&.nick] == nil
-          $last_messages_time[$first_pidor_data&.nick] = Time.now
-        end
+        $last_messages_time[$first_pidor_data&.nick] = Time.now if $last_messages_time[$first_pidor_data&.nick].nil?
 
-        $pidors[$pidors.count] = { :nick => $first_pidor_data&.nick, :host => $first_pidor_data&.host, :pidor_status => true, :chance => 10, :last_message => $last_messages_time[$first_pidor_data&.nick], :pidor_date => Time.now, :num => $pidors.count, :active => true, :last_attack_time => Time.now - 10_000 }
-
-
-
+        $pidors[$pidors.count] = { nick: $first_pidor_data&.nick, host: $first_pidor_data&.host, pidor_status: true, chance: 10, last_message: $last_messages_time[$first_pidor_data&.nick], pidor_date: Time.now, num: $pidors.count, active: true, last_attack_time: Time.now - 10_000 }
 
         m.channel.users.each do |u|
-          unless @bots.include?(u[0].nick) || !($pidors.select {|_k, v| v[:nick] == u[0].nick } == {})
-            if $last_messages_time[u[0].nick] == nil
-              $last_messages_time[u[0].nick] = Time.now
-            end
-            $pidors[$pidors.count] = { :nick => u[0].nick, :host => u[0].host, :pidor_status => false, :chance => 10, :last_message => $last_messages_time[u[0].nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now - 10_000 }
+          next if @bots.include?(u[0].nick) || !($pidors.select { |_k, v| v[:nick] == u[0].nick } == {})
 
-          end
+          $last_messages_time[u[0].nick] = Time.now if $last_messages_time[u[0].nick].nil?
+          $pidors[$pidors.count] = { nick: u[0].nick, host: u[0].host, pidor_status: false, chance: 10, last_message: $last_messages_time[u[0].nick], num: $pidors.count, active: true, last_attack_time: Time.now - 10_000 }
         end
 
-        m.reply "Всё о победителях прошлых раундов - https://your-domain.ga/pidor/ !".ubernation_days if ($prev_winner)
+        m.reply 'Всё о победителях прошлых раундов - https://your-domain.ga/pidor/ !'.ubernation_days if $prev_winner
         m.reply 'И новым главпидором становится...'.ubernation_days
         sleep 3
 
         User('ChanServ').send("VOICE #konsolechka #{$first_pidor_data&.nick}")
 
         if $no_highlight_nicks.include?($first_pidor_data&.nick)
-          m.reply "#{$first_pidor_data&.nick.dup.insert(1, '‍')}! Поздравляем! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+          m.reply "#{$first_pidor_data&.nick.dup.insert(1, '‍')}! Поздравляем! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
         else
-          m.reply "#{$first_pidor_data&.nick}! Поздравляем! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+          m.reply "#{$first_pidor_data&.nick}! Поздравляем! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
         end
-        $first_pidor = { :nick => $first_pidor_data&.nick, :date => Time.now.strftime('%d.%m.%Y %H:%M') }
+        $first_pidor = { nick: $first_pidor_data&.nick, date: Time.now.strftime('%d.%m.%Y %H:%M') }
         $pidor_time = Time.now.to_i
 
         player_list = []
-        $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+        $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
 
         sleep 3
         $pidors.each do |_ke, va|
           unless @bots.include?(va[:nick])
             if Channel('#konsolechka').has_user?(va[:nick])
-              $pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active] = true
-              if $pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:pidor_status]
-                unless (Channel('#konsolechka').voiced?(va[:nick]))
+              $pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active] = true
+              if $pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:pidor_status]
+                unless Channel('#konsolechka').voiced?(va[:nick])
                   User('ChanServ').send("VOICE #konsolechka #{va[:nick]}")
                 end
               else
-                if Channel('#konsolechka').voiced?(va[:nick])
-                  User('ChanServ').send("DEVOICE #konsolechka #{va[:nick]}")
-                end
+                User('ChanServ').send("DEVOICE #konsolechka #{va[:nick]}") if Channel('#konsolechka').voiced?(va[:nick])
               end
             else
-              $pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active] = false
+              $pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:active] = false
             end
           end
         end
-
 
       else
         $auto_pidor_triggered_last = false
@@ -1695,67 +1785,60 @@ k = Cinch::Bot.new do
         end
         if $pidor_time + 3600 < Time.now.to_i
 
-          if $debug_mode && $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active]
+          if $debug_mode && $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active]
 
             victory_chance = 0
 
             10_000.times do
-              if (rand(1..($pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count)) == $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count) && $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active]
-                victory_chance = victory_chance + 1
+              if (rand(1..($pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count)) == $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count) && $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active]
+                victory_chance += 1
               end
             end
             victory_chance = (victory_chance / 100).ceil
-            User(m.user.nick).send("Шанс снять статус пидора rand(1..#{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count})==#{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}: #{victory_chance}%".ubernation_days, true)
+            User(m.user.nick).send("Шанс снять статус пидора rand(1..#{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count})==#{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}: #{victory_chance}%".ubernation_days, true)
           end
-          if (rand(1..($pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count)) == $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count) && $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active]
+          if (rand(1..($pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count)) == $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count) && $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active]
 
             User('ChanServ').send("DEVOICE #konsolechka #{m.user.nick}")
-            $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status] = false
+            $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status] = false
 
             if $no_highlight_nicks.include?(m.user.nick)
-              m.reply "Волею судеб, статус зашкваренного пидора был снят с #{m.user.nick.dup.insert(1, '‍')}. Поздравляем! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+              m.reply "Волею судеб, статус зашкваренного пидора был снят с #{m.user.nick.dup.insert(1, '‍')}. Поздравляем! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
             else
-              m.reply "Волею судеб, статус зашкваренного пидора был снят с #{m.user.nick}. Поздравляем! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+              m.reply "Волею судеб, статус зашкваренного пидора был снят с #{m.user.nick}. Поздравляем! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
             end
 
-
-
             player_list = []
-            $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
-
+            $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
 
             $pidor_time = Time.now.to_i
           else
             @temp_new_pidors = []
 
-
-            $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.each {|k, _n| k }.each do |_ke, va|
-              (0..(va[:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == va[:nick] }.values.last[:num]][:last_message].to_i) / 900).ceil)).each do |_n|
-                unless va[:nick] == m.user.nick
-                  @temp_new_pidors << va[:nick]
-                end
+            $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.each { |k, _n| k }.each do |_ke, va|
+              (0..(va[:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == va[:nick] }.values.last[:num]][:last_message].to_i) / 900).ceil)).each do |_n|
+                @temp_new_pidors << va[:nick] unless va[:nick] == m.user.nick
               end
             end
-
 
             @temp_new_pidor = @temp_new_pidors.to_a.sample
             m.reply 'И новым пидором становится...'.ubernation_days
             sleep 3
 
             User('ChanServ').send("VOICE #konsolechka #{@temp_new_pidor}")
-            $pidors[$pidors.select {|_k, v| v[:nick][@temp_new_pidor] }.values.last[:num]][:pidor_status] = true
+            $pidors[$pidors.select { |_k, v| v[:nick][@temp_new_pidor] }.values.last[:num]][:pidor_status] = true
 
             if $no_highlight_nicks.include?(@temp_new_pidor)
-              m.reply "#{@temp_new_pidor.dup.insert(1, '‍')}! Поздравляем! Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+              m.reply "#{@temp_new_pidor.dup.insert(1, '‍')}! Поздравляем! Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
             else
-              m.reply "#{@temp_new_pidor}! Поздравляем! Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+              m.reply "#{@temp_new_pidor}! Поздравляем! Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
             end
 
-            $pidors.select {|_k, v| v[:host] == $pidors[$pidors.select {|_k, v| v[:nick] == @temp_new_pidor }.values.last[:num]][:host] }.values.each do |n|
+            $pidors.select { |_k, v| v[:host] == $pidors[$pidors.select { |_k, v| v[:nick] == @temp_new_pidor }.values.last[:num]][:host] }.values.each do |n|
               unless n[:nick] == @temp_new_pidor
                 $pidors[n[:num]][:pidor_status] = true
                 User('ChanServ').send("VOICE #konsolechka #{n[:nick]}")
@@ -1763,50 +1846,42 @@ k = Cinch::Bot.new do
             end
             $pidor_time = Time.now.to_i
 
-            if $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] > 10
+            if $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] > 10
               if $debug_mode
-                old_chance = $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
+                old_chance = $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
               end
-              $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] = $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - (($pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - 10) / rand(3..8)).ceil
+              $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] = $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - (($pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - 10) / rand(3..8)).ceil
               if $debug_mode
-                User(m.user.nick).send("Ваш коэффициент понижен: #{old_chance}->#{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
+                User(m.user.nick).send("Ваш коэффициент понижен: #{old_chance}->#{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
               end
-
 
             end
             player_list = []
-            $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+            $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
           end
 
         else
-          m.reply "Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}. До возможности применить команду осталось #{distance_of_time_in_words(3600 - (Time.now.to_i - $pidor_time))} https://your-domain.ga/pidor/ - статистика".ubernation_days
+          m.reply "Хата зашкварена с #{$first_pidor[:date]}! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}. До возможности применить команду осталось #{distance_of_time_in_words(3600 - (Time.now.to_i - $pidor_time))} https://your-domain.ga/pidor/ - статистика".ubernation_days
         end
 
-        if $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
+        if $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
           $game_ending = true
           $game_ending_started = Time.now
           $game_started = false
 
-          if $no_highlight_nicks.include?($pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick])
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
-
-
+          if $no_highlight_nicks.include?($pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick])
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
 
           else
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
-
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
 
           end
 
+          $prev_winner = { nick: $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick], date: Time.now.strftime('%d.%m.%Y %H:%M'), glavpidor: $first_pidor_data&.nick }
 
-
-          $prev_winner = { :nick => $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick], :date => Time.now.strftime('%d.%m.%Y %H:%M'), :glavpidor => $first_pidor_data&.nick }
-
-          Channel('#konsolechka').voiced.map {|e| e.nick }.each do |u|
+          Channel('#konsolechka').voiced.map { |e| e.nick }.each do |u|
             unless @bots.include?(u)
-              if (Channel('#konsolechka').voiced?(u))
-                User('ChanServ').send("DEVOICE #konsolechka #{u}")
-              end
+              User('ChanServ').send("DEVOICE #konsolechka #{u}") if Channel('#konsolechka').voiced?(u)
             end
           end
           sleep 60
@@ -1820,50 +1895,45 @@ k = Cinch::Bot.new do
     User('ChanServ').send("VOICE #konsolechka #{m.user.nick}") if @bots.include?(m.user.nick)
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || @bots.include?(m.user.nick) || !$game_started || $game_ending
 
-      if $pidors.select {|_k, v| v[:nick] == m.user.nick } == {}
-        if $pidors.select {|_k, v| v[:host] == m.user.host } == {}
-          if $last_messages_time[m.user.nick] == nil
-            $last_messages_time[m.user.nick] = Time.now
-          end
-          $pidors[$pidors.count] = { :nick => m.user.nick, :host => m.user.host, :pidor_status => false, :chance => 25, :last_message => $last_messages_time[m.user.nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+      if $pidors.select { |_k, v| v[:nick] == m.user.nick } == {}
+        if $pidors.select { |_k, v| v[:host] == m.user.host } == {}
+          $last_messages_time[m.user.nick] = Time.now if $last_messages_time[m.user.nick].nil?
+          $pidors[$pidors.count] = { nick: m.user.nick, host: m.user.host, pidor_status: false, chance: 25, last_message: $last_messages_time[m.user.nick], num: $pidors.count, active: true, last_attack_time: Time.now }
 
           player_list = []
-          $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+          $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
         else
-          if $pidors.select {|_k, v| v[:host] == m.user.host }.count > 1
-            if $pidors.select {|_k, v| v[:host] == m.user.host }.select {|_kk, vv| vv[:pidor_status] == true }.count > 0
-              $pidors[$pidors.count] = { :nick => m.user.nick, :host => m.user.host, :pidor_status => true, :chance => 125, :last_message => $last_messages_time[m.user.nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+          if $pidors.select { |_k, v| v[:host] == m.user.host }.count > 1
+            if $pidors.select { |_k, v| v[:host] == m.user.host }.select { |_kk, vv| vv[:pidor_status] == true }.count > 0
+              $pidors[$pidors.count] = { nick: m.user.nick, host: m.user.host, pidor_status: true, chance: 125, last_message: $last_messages_time[m.user.nick], num: $pidors.count, active: true, last_attack_time: Time.now }
             else
-              $pidors[$pidors.count] = { :nick => m.user.nick, :host => m.user.host, :pidor_status => false, :chance => 25, :last_message => $last_messages_time[m.user.nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+              $pidors[$pidors.count] = { nick: m.user.nick, host: m.user.host, pidor_status: false, chance: 25, last_message: $last_messages_time[m.user.nick], num: $pidors.count, active: true, last_attack_time: Time.now }
             end
           else
-            $pidors[$pidors.select {|_k, v| v[:host] == m.user.host }.values.last[:num]][:nick] = m.user.nick
+            $pidors[$pidors.select { |_k, v| v[:host] == m.user.host }.values.last[:num]][:nick] = m.user.nick
           end
         end
       end
 
-      if $pidors.select {|_k, v| v[:host] == m.user.host } == {}
-        if $pidors.select {|_k, v| v[:nick] == m.user.nick } == {}
-          if $last_messages_time[m.user.nick] == nil
-            $last_messages_time[m.user.nick] = Time.now
-          end
-          $pidors[$pidors.count] = { :nick => m.user.nick, :host => m.user.host, :pidor_status => false, :chance => 25, :last_message => $last_messages_time[m.user.nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+      if $pidors.select { |_k, v| v[:host] == m.user.host } == {}
+        if $pidors.select { |_k, v| v[:nick] == m.user.nick } == {}
+          $last_messages_time[m.user.nick] = Time.now if $last_messages_time[m.user.nick].nil?
+          $pidors[$pidors.count] = { nick: m.user.nick, host: m.user.host, pidor_status: false, chance: 25, last_message: $last_messages_time[m.user.nick], num: $pidors.count, active: true, last_attack_time: Time.now }
 
           player_list = []
-          $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+          $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
         else
-          $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:host] = m.user.host
+          $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:host] = m.user.host
         end
       end
 
-      $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active] = true
-
+      $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active] = true
 
       player_list = []
-      $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+      $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
 
-      if $pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:pidor_status]
-        User('ChanServ').send("VOICE #konsolechka #{m.user.nick}") if !(m.channel.voiced?(m.user.nick))
+      if $pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:pidor_status]
+        User('ChanServ').send("VOICE #konsolechka #{m.user.nick}") unless m.channel.voiced?(m.user.nick)
       end
 
     end
@@ -1872,33 +1942,29 @@ k = Cinch::Bot.new do
   on :catchall do |m|
     if m.command == 'NICK'
       unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || @bots.include?(m.user.nick) || !$game_started || $game_ending
-        if $last_messages_time[m.user.nick] == nil
-          $last_messages_time[m.user.nick] = Time.now
-        end
+        $last_messages_time[m.user.nick] = Time.now if $last_messages_time[m.user.nick].nil?
         old_nick = m.raw.scan(/^:([^!]{2,16}).*/)[0][0]
-        if !($pidors.select {|_k, v| v[:host] == m.user.host } == {})
-          if $pidors.select {|_k, v| v[:host] == m.user.host }.count > 1
-            if $pidors.select {|_k, v| v[:host] == m.user.host }.select {|_kk, vv| vv[:pidor_status] == true }.count > 0
-              $pidors[$pidors.select {|_k, v| v[:nick] == old_nick }.values.last[:num]][:nick] = m.user.nick
+        if !($pidors.select { |_k, v| v[:host] == m.user.host } == {})
+          if $pidors.select { |_k, v| v[:host] == m.user.host }.count > 1
+            if $pidors.select { |_k, v| v[:host] == m.user.host }.select { |_kk, vv| vv[:pidor_status] == true }.count > 0
+              $pidors[$pidors.select { |_k, v| v[:nick] == old_nick }.values.last[:num]][:nick] = m.user.nick
             else
-              $pidors[$pidors.select {|_k, v| v[:nick] == old_nick }.values.last[:num]][:nick] = m.user.nick
+              $pidors[$pidors.select { |_k, v| v[:nick] == old_nick }.values.last[:num]][:nick] = m.user.nick
             end
 
           else
-            $pidors[$pidors.select {|_k, v| v[:host] == m.user.host }.values.last[:num]][:nick] = m.user.nick
+            $pidors[$pidors.select { |_k, v| v[:host] == m.user.host }.values.last[:num]][:nick] = m.user.nick
             player_list = []
-            $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+            $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
           end
         else
-          if !($pidors.select {|_k, v| v[:nick] == old_nick } == {})
-            $pidors[$pidors.select {|_k, v| v[:nick] == old_nick }.values.last[:num]][:host] = m.user.host
-            $pidors[$pidors.select {|_k, v| v[:nick] == old_nick }.values.last[:num]][:nick] = m.user.nick
+          unless $pidors.select { |_k, v| v[:nick] == old_nick } == {}
+            $pidors[$pidors.select { |_k, v| v[:nick] == old_nick }.values.last[:num]][:host] = m.user.host
+            $pidors[$pidors.select { |_k, v| v[:nick] == old_nick }.values.last[:num]][:nick] = m.user.nick
             player_list = []
-            $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+            $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
           end
         end
-
-
 
       end
     end
@@ -1907,43 +1973,38 @@ k = Cinch::Bot.new do
       quitter_nick = m.raw.scan(/^:([^!]{2,16}).*/)[0][0]
       quitter_host = m.raw.scan(/^:[^!]{2,16}![^\ ]*@([^\ ]+).*/)[0][0]
       unless @ignored_users.include?(quitter_host) || @ignored_nicks.include?(quitter_nick) || @bots.include?(quitter_nick) || !$game_started || $game_ending
-        if !($pidors.select {|_k, v| v[:host] == quitter_host } == {})
-          if $pidors.select {|_k, v| v[:host] == quitter_host }.count > 1
+        unless $pidors.select { |_k, v| v[:host] == quitter_host } == {}
+          if $pidors.select { |_k, v| v[:host] == quitter_host }.count > 1
           else
-            $pidors[$pidors.select {|_k, v| v[:host] == quitter_host }.values.last[:num]][:active] = false
+            $pidors[$pidors.select { |_k, v| v[:host] == quitter_host }.values.last[:num]][:active] = false
           end
         end
-        if !($pidors.select {|_k, v| v[:nick] == quitter_nick } == {})
-          $pidors[$pidors.select {|_k, v| v[:nick] == quitter_nick }.values.last[:num]][:active] = false
+        unless $pidors.select { |_k, v| v[:nick] == quitter_nick } == {}
+          $pidors[$pidors.select { |_k, v| v[:nick] == quitter_nick }.values.last[:num]][:active] = false
         end
-        if !($pidors.select {|_k, v| v[:nick] == m.user.nick } == {})
-          $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active] = false
+        unless $pidors.select { |_k, v| v[:nick] == m.user.nick } == {}
+          $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:active] = false
         end
 
         player_list = []
-        $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+        $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
 
-        if $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
+        if $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
           $game_ending = true
           $game_ending_started = Time.now
           $game_started = false
-          if $no_highlight_nicks.include?($pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick])
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
-
-
+          if $no_highlight_nicks.include?($pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick])
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
 
           else
-            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
-
+            m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
 
           end
-          $prev_winner = { :nick => $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick], :date => Time.now.strftime('%d.%m.%Y %H:%M'), :glavpidor => $first_pidor_data&.nick }
+          $prev_winner = { nick: $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick], date: Time.now.strftime('%d.%m.%Y %H:%M'), glavpidor: $first_pidor_data&.nick }
 
-          Channel('#konsolechka').voiced.map {|e| e.nick }.each do |u|
+          Channel('#konsolechka').voiced.map { |e| e.nick }.each do |u|
             unless @bots.include?(u)
-              if (Channel('#konsolechka').voiced?(u))
-                User('ChanServ').send("DEVOICE #konsolechka #{u}")
-              end
+              User('ChanServ').send("DEVOICE #konsolechka #{u}") if Channel('#konsolechka').voiced?(u)
             end
           end
           sleep 60
@@ -1958,64 +2019,56 @@ k = Cinch::Bot.new do
     name = m.user.nick
     msg = m.message
 
-
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || @bots.include?(m.user.nick) || !$game_started || msg.match?(/^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s* зашкварь (.+)/i) || $game_ending
 
-      if !($pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status])
-        if $pidors.select {|_kk, vv| vv[:pidor_status] }.select {|_kk, vv| vv[:active] }.map {|_kkk, vvv| vvv[:nick] }.any? { |s| msg.match?(/^.*\b#{s}\b.*$/i) }
+      unless $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status]
+        if $pidors.select { |_kk, vv| vv[:pidor_status] }.select { |_kk, vv| vv[:active] }.map { |_kkk, vvv| vvv[:nick] }.any? { |s| msg.match?(/^.*\b#{s}\b.*$/i) }
           if $debug_mode
-            old_chance = $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
+            old_chance = $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
           end
-          $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] += rand(2..5)
+          $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] += rand(2..5)
           if $debug_mode
-            User(m.user.nick).send("Коэффициент #{m.user.nick} увеличился на #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
+            User(m.user.nick).send("Коэффициент #{m.user.nick} увеличился на #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
           end
         end
       end
 
-      if msg.match?(/^.*(аниме(шники?)?|трапы?|habrahabr|хабра|альфабанк|альфа-банк|\b\)\)\b|\bgnome\b|\bгном\b|крыса|xfce|consolekit|polkit|systemd|системд|Леннарт|Поттеринг|Lennart|Poettering).*/i) && !($pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status])
+      if msg.match?(/^.*(аниме(шники?)?|трапы?|habrahabr|хабра|альфабанк|альфа-банк|\b\)\)\b|\bgnome\b|\bгном\b|крыса|xfce|consolekit|polkit|systemd|системд|Леннарт|Поттеринг|Lennart|Poettering).*/i) && !($pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status])
 
         if $debug_mode
-          old_chance = $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
+          old_chance = $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
         end
-        $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] += rand(1..4)
+        $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] += rand(1..4)
         if $debug_mode
-          User(m.user.nick).send("Коэффициент #{m.user.nick} увеличился на #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
+          User(m.user.nick).send("Коэффициент #{m.user.nick} увеличился на #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
         end
       end
 
-      $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message] = Time.now
+      $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message] = Time.now
       $last_messages_time[m.user.nick] = Time.now
 
-
-      if $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
+      if $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
         $game_ending = true
         $game_ending_started = Time.now
         $game_started = false
-        if $no_highlight_nicks.include?($pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick])
-          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
-
-
+        if $no_highlight_nicks.include?($pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick])
+          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
 
         else
-          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
-
+          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
 
         end
-        $prev_winner = { :nick => $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick], :date => Time.now.strftime('%d.%m.%Y %H:%M'), :glavpidor => $first_pidor_data&.nick }
+        $prev_winner = { nick: $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick], date: Time.now.strftime('%d.%m.%Y %H:%M'), glavpidor: $first_pidor_data&.nick }
 
-        Channel('#konsolechka').voiced.map {|e| e.nick }.each do |u|
+        Channel('#konsolechka').voiced.map { |e| e.nick }.each do |u|
           unless @bots.include?(u)
-            if (Channel('#konsolechka').voiced?(u))
-              User('ChanServ').send("DEVOICE #konsolechka #{u}")
-            end
+            User('ChanServ').send("DEVOICE #konsolechka #{u}") if Channel('#konsolechka').voiced?(u)
           end
         end
         sleep 60
         $game_ending = false
       end
     end
-
   end
 
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s* зашкварь (.+)/i) do |m, n|
@@ -2029,142 +2082,129 @@ k = Cinch::Bot.new do
         if $game_ending
           m.reply "Игра про пидоров в данный момент завершается, пожалуйста подождите #{(60 - (Time.now - $game_ending_started)).ceil} сек.".ubernation_days
         else
-          if $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status]
-            m.reply "Да ты сам зашкварен, чмо! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+          if $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status]
+            m.reply "Да ты сам зашкварен, чмо! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
           else
 
             if !Channel('#konsolechka').has_user?(n.strip)
               m.reply "404: юзер #{n} не найден)".ubernation_days
             else
               user = User(n.strip)
-              if !((Time.now - $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_attack_time]) > 5)
-                m.reply "До возможности применить команду осталось #{distance_of_time_in_words(5 - (Time.now - $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_attack_time]))}".ubernation_days
+              if !((Time.now - $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_attack_time]) > 5)
+                m.reply "До возможности применить команду осталось #{distance_of_time_in_words(5 - (Time.now - $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_attack_time]))}".ubernation_days
               else
-                $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_attack_time] = Time.now
+                $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_attack_time] = Time.now
                 if user.nick == m.user.nick
                   if $no_highlight_nicks.include?(m.user.nick)
 
                     m.reply "#{m.user.nick.dup.insert(1, '‍')} со смаком пожрал своей ложкой из унитаза, запасшись силами!".ubernation_days
 
-
                   else
                     m.reply "#{m.user.nick} со смаком пожрал своей ложкой из унитаза, запасшись силами!".ubernation_days
 
-
                   end
-
 
                   if $debug_mode
-                    old_chance = $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
+                    old_chance = $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
                   end
 
-                  $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] += rand(-3..6)
+                  $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] += rand(-3..6)
 
                   player_list = []
-                  $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+                  $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
 
                   if $debug_mode
-                    User(m.user.nick).send("Коэффициент #{m.user.nick} изменился на #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
+                    User(m.user.nick).send("Коэффициент #{m.user.nick} изменился на #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
                   end
-
 
                 else
-                  if $pidors.select {|_k, v| v[:nick] == user.nick } == {}
-                    $pidors[$pidors.count] = { :nick => user.nick, :host => user.host, :pidor_status => false, :chance => 10_000, :last_message => $last_messages_time[user.nick], :num => $pidors.count, :active => true, :last_attack_time => Time.now }
+                  if $pidors.select { |_k, v| v[:nick] == user.nick } == {}
+                    $pidors[$pidors.count] = { nick: user.nick, host: user.host, pidor_status: false, chance: 10_000, last_message: $last_messages_time[user.nick], num: $pidors.count, active: true, last_attack_time: Time.now }
                   end
-                  if $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:pidor_status]
+                  if $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:pidor_status]
 
                     if $no_highlight_nicks.include?(user.nick)
 
-
-                      m.reply "#{user.nick.dup.insert(1, '‍')} уже зашкварен! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
-
+                      m.reply "#{user.nick.dup.insert(1, '‍')} уже зашкварен! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
                     else
-                      m.reply "#{user.nick} уже зашкварен! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
-
+                      m.reply "#{user.nick} уже зашкварен! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
                     end
-
 
                   else
                     if @bots.include?(user.nick)
                     else
 
-                      our_rand = rand(0..($pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil + $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil))
+                      our_rand = rand(0..($pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil + $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil))
 
                       if $debug_mode
-                        User(m.user.nick).send("Коэффициенты #{m.user.nick}: #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]} (+#{((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil}), #{user.nick}: #{$pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]} (+#{((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil})".ubernation_days, true)
+                        User(m.user.nick).send("Коэффициенты #{m.user.nick}: #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]} (+#{((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil}), #{user.nick}: #{$pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]} (+#{((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil})".ubernation_days, true)
 
-                        User(m.user.nick).send("Формула победы нападающего: (rand(0..(#{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}+#{((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil}+#{$pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]}+#{((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil})<=(#{$pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]}+#{((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil})".ubernation_days, true)
+                        User(m.user.nick).send("Формула победы нападающего: (rand(0..(#{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}+#{((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil}+#{$pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]}+#{((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil})<=(#{$pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]}+#{((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil})".ubernation_days, true)
 
                         victory_chance = 0
 
                         10_000.times do
-                          if rand(0..($pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil + $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)) <= ($pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)
-                            victory_chance = victory_chance + 1
+                          if rand(0..($pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil + $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)) <= ($pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)
+                            victory_chance += 1
                           end
                         end
                         victory_chance = (victory_chance / 100).ceil
 
-                        User(m.user.nick).send("Результат: (#{our_rand}<#{($pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)}) = #{(our_rand < $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil).to_s}. Шанс победы: #{victory_chance}%.".ubernation_days, true)
+                        User(m.user.nick).send("Результат: (#{our_rand}<#{($pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)}) = #{(our_rand < $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)}. Шанс победы: #{victory_chance}%.".ubernation_days, true)
 
                       end
 
-                      if our_rand <= ($pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)
+                      if our_rand <= ($pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:last_message].to_i) / 900).ceil)
 
-                        $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:pidor_status] = true
-                        $pidors.select {|_k, v| v[:host] == $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:host] }.values.each {|n| $pidors[n[:num]][:pidor_status] = true }
+                        $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:pidor_status] = true
+                        $pidors.select { |_k, v| v[:host] == $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:host] }.values.each { |n| $pidors[n[:num]][:pidor_status] = true }
                         result_pidor_nick = user.nick
 
                         if $no_highlight_nicks.include?(user.nick) || $no_highlight_nicks.include?(m.user.nick)
 
-
-                          m.reply "#{m.user.nick.dup.insert(1, '‍')} успешно зашкварил #{user.nick.dup.insert(1, '‍')}! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+                          m.reply "#{m.user.nick.dup.insert(1, '‍')} успешно зашкварил #{user.nick.dup.insert(1, '‍')}! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
                         else
 
-                          m.reply "#{m.user.nick} успешно зашкварил #{user.nick}! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+                          m.reply "#{m.user.nick} успешно зашкварил #{user.nick}! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
                         end
 
-
-
-
                         result_pidor_nick = user.nick
                         User('ChanServ').send("VOICE #konsolechka #{user.nick}")
-                        $pidors.select {|_k, v| v[:host] == $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:host] }.values.each do |n|
+                        $pidors.select { |_k, v| v[:host] == $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:host] }.values.each do |n|
                           unless n[:nick] == result_pidor_nick
                             $pidors[n[:num]][:pidor_status] = true
                             User('ChanServ').send("VOICE #konsolechka #{n[:nick]}")
                           end
                         end
                         if $debug_mode
-                          old_chance = $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
+                          old_chance = $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]
                         end
-                        $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] += rand(-2..1)
+                        $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] += rand(-2..1)
 
                         if $debug_mode
-                          User(m.user.nick).send("Коэффициент #{m.user.nick} изменился на #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
+                          User(m.user.nick).send("Коэффициент #{m.user.nick} изменился на #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
                         end
 
                       else
-                        $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status] = true
+                        $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:pidor_status] = true
                         result_pidor_nick = m.user.nick
                         if $no_highlight_nicks.include?(user.nick) || $no_highlight_nicks.include?(m.user.nick)
 
-
-                          m.reply "#{m.user.nick.dup.insert(1, '‍')} не сумел зашкварить #{user.nick.dup.insert(1, '‍')} и сам стал пидором! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+                          m.reply "#{m.user.nick.dup.insert(1, '‍')} не сумел зашкварить #{user.nick.dup.insert(1, '‍')} и сам стал пидором! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
                         else
 
-                          m.reply "#{m.user.nick} не сумел зашкварить #{user.nick} и сам стал пидором! Незашкваренных в хате осталось: #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count}".ubernation_days
+                          m.reply "#{m.user.nick} не сумел зашкварить #{user.nick} и сам стал пидором! Незашкваренных в хате осталось: #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count}".ubernation_days
 
                         end
 
                         User('ChanServ').send("VOICE #konsolechka #{m.user.nick}")
 
-                        $pidors.select {|_k, v| v[:host] == $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:host] }.values.each do |n|
+                        $pidors.select { |_k, v| v[:host] == $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:host] }.values.each do |n|
                           unless n[:nick] == result_pidor_nick
                             $pidors[n[:num]][:pidor_status] = true
                             User('ChanServ').send("VOICE #konsolechka #{n[:nick]}")
@@ -2172,46 +2212,42 @@ k = Cinch::Bot.new do
                         end
 
                         if $debug_mode
-                          old_chance = $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]
+                          old_chance = $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]
                         end
-                        $pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] += rand(-2..0)
+                        $pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] += rand(-2..0)
 
                         if $debug_mode
-                          User(m.user.nick).send("Коэффициент #{user.nick} изменился на #{$pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select {|_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
+                          User(m.user.nick).send("Коэффициент #{user.nick} изменился на #{$pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance] - old_chance} и стал равен #{$pidors[$pidors.select { |_k, v| v[:nick] == user.nick }.values.last[:num]][:chance]}".ubernation_days, true)
                         end
 
                       end
                       player_list = []
-                      $pidors.map {|_kkk, vvv| vvv[:nick] }.each {|n| player_list << { n => { :chance => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, :is_pidor => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], :is_online => $pidors[$pidors.select {|_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
+                      $pidors.map { |_kkk, vvv| vvv[:nick] }.each { |n| player_list << { n => { chance: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:chance] + ((Time.now.to_i - $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:last_message].to_i) / 900).ceil, is_pidor: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:pidor_status], is_online: $pidors[$pidors.select { |_k, v| v[:nick] == n }.values.last[:num]][:active] } } }
                     end
-                    if $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
+                    if $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
                       $game_ending = true
                       $game_ending_started = Time.now
                       $game_started = false
-                                 if $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count == 1
-                        if $no_highlight_nicks.include?($pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick])
-           
-           
-                          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
-           
+                      if $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count == 1
+                        if $no_highlight_nicks.include?($pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick])
+
+                          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
+
                         else
-           
-                          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
-           
+
+                          m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
+
                         end
-                                   $prev_winner = { :nick => $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick], :date => Time.now, :glavpidor => $first_pidor_data&.nick }
+                        $prev_winner = { nick: $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick], date: Time.now, glavpidor: $first_pidor_data&.nick }
                       else
-                                   m.reply 'И у нас нет победителя игры! На хате зашкварены все присутствующие! Поздравить некого!'.ubernation_days
-           
-                                   $prev_winner = { :nick => 'Konsolechka', :date => Time.now, :glavpidor => $first_pidor_data&.nick }
-                                 end
+                        m.reply 'И у нас нет победителя игры! На хате зашкварены все присутствующие! Поздравить некого!'.ubernation_days
 
+                        $prev_winner = { nick: 'Konsolechka', date: Time.now, glavpidor: $first_pidor_data&.nick }
+                      end
 
-                      Channel('#konsolechka').voiced.map {|e| e.nick }.each do |u|
+                      Channel('#konsolechka').voiced.map { |e| e.nick }.each do |u|
                         unless @bots.include?(u)
-                          if (Channel('#konsolechka').voiced?(u))
-                            User('ChanServ').send("DEVOICE #konsolechka #{u}")
-                          end
+                          User('ChanServ').send("DEVOICE #konsolechka #{u}") if Channel('#konsolechka').voiced?(u)
                         end
                       end
                       sleep 60
@@ -2223,39 +2259,31 @@ k = Cinch::Bot.new do
 
             end
 
-
           end
-          if $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
+          if $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count <= 1 && !$game_ending && $game_started
             $game_ending = true
             $game_ending_started = Time.now
             $game_started = false
-            if $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.count == 1
-              if $no_highlight_nicks.include?($pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick])
-                m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
-
-
+            if $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.count == 1
+              if $no_highlight_nicks.include?($pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick])
+                m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick].dup.insert(1, '‍')}! Поздравляем!".ubernation_days
 
               else
-                m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
-
+                m.reply "И у нас есть победитель игры! На хате не зашкварен только #{$pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick]}! Поздравляем!".ubernation_days
 
               end
-              $prev_winner = { :nick => $pidors.select {|_k, v| !v[:pidor_status] }.select {|_kk, vv| vv[:active] }.values.last[:nick], :date => Time.now.strftime('%d.%m.%Y %H:%M'), :glavpidor => $first_pidor_data&.nick }
+              $prev_winner = { nick: $pidors.select { |_k, v| !v[:pidor_status] }.select { |_kk, vv| vv[:active] }.values.last[:nick], date: Time.now.strftime('%d.%m.%Y %H:%M'), glavpidor: $first_pidor_data&.nick }
             else
               m.reply 'И у нас нет победителя игры! На хате зашкварены все присутствующие! Поздравить некого!'.ubernation_days
 
-              $prev_winner = { :nick => 'Konsolechka', :date => Time.now, :glavpidor => $first_pidor_data&.nick }
+              $prev_winner = { nick: 'Konsolechka', date: Time.now, glavpidor: $first_pidor_data&.nick }
             end
             #  $gamestats[:games][$game_session_number][:stats][:finished]=Time.now
             #  $gamestats[:games][$game_session_number][:stats][:winner]=$pidors.select{|k,v|!v[:pidor_status]}.select{|kk,vv|vv[:active]}.values.last[:nick]
 
-
-
-            Channel('#konsolechka').voiced.map {|e| e.nick }.each do |u|
+            Channel('#konsolechka').voiced.map { |e| e.nick }.each do |u|
               unless @bots.include?(u)
-                if (Channel('#konsolechka').voiced?(u))
-                  User('ChanServ').send("DEVOICE #konsolechka #{u}")
-                end
+                User('ChanServ').send("DEVOICE #konsolechka #{u}") if Channel('#konsolechka').voiced?(u)
               end
             end
             sleep 60
@@ -2264,15 +2292,13 @@ k = Cinch::Bot.new do
 
         end
 
-
       end
 
-      $pidors[$pidors.select {|_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message] = Time.now
+      $pidors[$pidors.select { |_k, v| v[:nick] == m.user.nick }.values.last[:num]][:last_message] = Time.now
       $last_messages_time[m.user.nick] = Time.now
     end
   end
 end
-
 
 begin
   k.start
