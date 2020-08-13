@@ -4,7 +4,7 @@ RUN gem install bundler
 
 RUN ln -s /usr/lib/apt/methods/http /usr/lib/apt/methods/https && echo "deb ftp://ftp.se.debian.org/debian/ stretch main" > /etc/apt/sources.list
 
-RUN apt-get -o Acquire::CompressionTypes::Order::=gz update && DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::CompressionTypes::Order::=gz install -y ffmpeg
+RUN apt-get -o Acquire::CompressionTypes::Order::=gz update && DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::CompressionTypes::Order::=gz install -y ffmpeg python3-pip && pip3 install --system youtube-dl
 
 RUN useradd -d /konsolechka -M -s /bin/bash konsolechka
 

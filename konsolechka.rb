@@ -1270,24 +1270,43 @@ k = Cinch::Bot.new do
         agent.get url.to_s
         title = agent.page.search('title')[0].text.strip.gsub(/ - YouTube/, '').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
         if agent.page.uri.to_s.match?(%r{youtube\.com/watch}) || agent.page.uri.to_s.match?(/youtu\.be/)
+            
+          youtube_data=JSON.parse(`youtube-dl  --flat-playlist --skip-download -J "#{url.to_s   }"`)
 
-          if title.empty? || title == 'YouTube'
+          if (youtube_data["upload_date"].to_i>0)
+            title = Date.strptime(youtube_data["upload_date"].to_s, "%Y%m%d").strftime('%d.%m.%Y')+ " — " + youtube_data["uploader"].to_s+" — "+youtube_data["title"].to_s + "("+youtube_data["average_rating"].to_f.round(1).to_s+"/5)"
+          else
+            title = youtube_data["uploader"].to_s+" — "+youtube_data["title"].to_s + " ("+youtube_data["average_rating"].to_f.round(1).to_s+"/5)"
+          end
+          
+          if (youtube_data["duration"].to_i>0)
+            title = title + " — " + distance_of_time_in_words(youtube_data["duration"].to_i)
+          end
+          
+          if title.empty? || title == 'YouTube' || title == " —  — (0.0/5)" || title == " — (0.0/5)"
             title = agent.page.search('meta[name="title"]')[0][:content].strip.gsub(/ - YouTube/, '').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
           end
-          view_count_tmp = agent.page.search('.watch-view-count').text.gsub(/ views/, '')
-          view_count = view_count_tmp.tr('^0-9', '').to_i if view_count_tmp.length > 0
-          watcher_live_names = %w[зрителей зритель зрителя]
-          watcher_names = %w[просмотров просмотр просмотра]
 
-          unless view_count.is_a? Integer
-            view_count_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer":{"viewCount":{"simpleText":"([0-9\.,\ ]+) (?:views|Aufrufe)"}/im)
-            view_count = view_count_tmp[0][0].tr('^0-9', '').to_i if view_count_tmp.length > 0
+          if ((youtube_data["is_live"].to_s!="true") && (youtube_data["view_count"].to_i >0))
+            view_count = youtube_data["view_count"].to_i
+            watcher_names = %w[просмотров просмотр просмотра]
+          else
+            view_count_tmp = agent.page.search('.watch-view-count').text.gsub(/ views/, '')
+            view_count = view_count_tmp.tr('^0-9', '').to_i if view_count_tmp.length > 0
+            watcher_live_names = %w[зрителей зритель зрителя]
+            watcher_names = %w[просмотров просмотр просмотра]
+            
+            unless view_count.is_a? Integer
+              view_count_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer":{"viewCount":{"simpleText":"([0-9\.,\ ]+) (?:views|Aufrufe)"}/im)
+              view_count = view_count_tmp[0][0].tr('^0-9', '').to_i if view_count_tmp.length > 0
+            end
+            
+            unless view_count.is_a? Integer
+              view_count_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer\\":{\\"viewCount\\":{\\"simpleText\\":\\"([0-9\.,\ ]+) /im)
+              view_count = view_count_tmp[0][0].tr('^0-9', '').to_i if view_count_tmp.length > 0
+            end
           end
 
-          unless view_count.is_a? Integer
-            view_count_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer\\":{\\"viewCount\\":{\\"simpleText\\":\\"([0-9\.,\ ]+) /im)
-            view_count = view_count_tmp[0][0].tr('^0-9', '').to_i if view_count_tmp.length > 0
-          end
 
           if !(view_count.is_a? Integer)
             view_count_num_tmp = agent.page.search('script').text.scan(/viewCount\\":\{\\"runs\\":\[\{\\"text\\":\\"(?:Aktuell )?([0-9\.,\ ]+) (?:watching now|Zuschauer)\\"\}/im)
