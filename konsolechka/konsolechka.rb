@@ -1613,14 +1613,14 @@ k = Cinch::Bot.new do
         @tells ||= Hash.new { |h, k| h[k] = [] }
         if m.channel.users.map {|e| e[0].nick }.include?(n)
           if $no_highlight_nicks.include?(m.user.nick)
-            m.reply("#{m.user.nick.dup.insert(1, '�')}, в шары долбишься?".ubernation_days)
+            m.reply("#{m.user.nick.dup.insert(1, '‍')}, в шары долбишься?".ubernation_days)
           else
             m.reply("#{m.user.nick}, в шары долбишься?".ubernation_days)
           end
         else
           if @tells[n].length >= 5
             if $no_highlight_nicks.include?(m.user.nick)
-              m.reply("#{m.user.nick.dup.insert(1, '�')}, лимит сообщений (5) достигнут.".ubernation_days)
+              m.reply("#{m.user.nick.dup.insert(1, '‍')}, лимит сообщений (5) достигнут.".ubernation_days)
             else
               m.reply("#{m.user.nick}, лимит сообщений (5) достигнут.".ubernation_days)
             end
@@ -1632,7 +1632,7 @@ k = Cinch::Bot.new do
         end
       else
         if $no_highlight_nicks.include?(m.user.nick)
-          m.reply("#{m.user.nick.dup.insert(1, '�')} у тебя хуйня вместо ника.".ubernation_days)
+          m.reply("#{m.user.nick.dup.insert(1, '‍')} у тебя хуйня вместо ника.".ubernation_days)
         else
           m.reply("#{m.user.nick} у тебя хуйня вместо ника.".ubernation_days)
         end
