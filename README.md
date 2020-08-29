@@ -1,22 +1,10 @@
 Konsolechka OpenSourceEdition Docker
 --------
 
-Build the image:
+Run konsolechka:
 
 ```
-docker build -t konsolechka .
-```
-
-Run the image:
-
-```
-docker run -p 4567:4567 konsolechka
-```
-
-Run in background:
-
-```
-docker run -d -p 4567:4567 konsolechka
+docker-compose up -d
 ```
 
 Access the pidor stats:

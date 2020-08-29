@@ -1,0 +1,10 @@
+version: '3.3'
+services:
+  konsolechka:
+    build: ./konsolechka/
+    ports:
+      - "4567:4567"
+    depends_on:
+      - dopolnyator
+  dopolnyator:
+    build: ./dopolnyator/
