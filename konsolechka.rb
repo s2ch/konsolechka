@@ -185,6 +185,37 @@ class String
     end
   end
 
+  def ask_deeppavlov(say_instead="")
+
+    uri = URI('https://7012.lnsigo.mipt.ru/model')
+    n = Net::HTTP.new("7012.lnsigo.mipt.ru", 443)
+    n.use_ssl = true
+    
+    req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+    req.body = {question_raw: [self]}.to_json
+    res = n.start do |http|
+        http.request(req)
+    end
+
+    reply_text =  JSON.parse(res.body)[0][0]
+    
+    if (reply_text=="")
+      if (say_instead=="")
+        otv = File.readlines('answ.txt').map(&:chomp)
+        otv.sample.upcase_first
+      else
+        if (say_instead=="when")
+          otv = File.readlines('otv.txt').map(&:chomp)
+          otv.sample.upcase_first
+        else
+          say_instead.upcase_first
+        end
+      end
+    else
+      reply_text.upcase_first
+    end
+  end
+
   def ukorachivatel
     n = Net::HTTP.new('your-domain.ga', 443)
     n.use_ssl = true
@@ -332,7 +363,7 @@ k = Cinch::Bot.new do
     end
   end
 
-  on(:message, /Консолька, дистрибутивы/) { |m| a = Mechanize.new; a.get('https://distrowatch.com/'); m.reply a.page.search('.phr2').first(10).zip(a.page.search('.phr3')).map { |e| "#{e[0].text.ubernation_days}: #{e[1].text.ubernation_days}" }.join("\n") }
+  on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\sдистрибутивы/i) {|m| a = Mechanize.new; a.get('https://distrowatch.com/'); m.reply a.page.search('.phr2').first(10).zip(a.page.search('.phr3')).map {|e| "#{e[0].text.ubernation_days}: #{e[1].text.ubernation_days}" }.join("\n") }
 
   on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*совет/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
@@ -368,10 +399,14 @@ k = Cinch::Bot.new do
 
       end
 
+      begin
       translation = $translate.translate n1, to: n2
       translation = CGI.unescapeHTML(translation.text).gsub(/ \.\.\./, '…')
-
-      m.reply(translation.to_s)
+      
+      m.safe_reply(translation.to_s)
+      rescue Google::Cloud::InvalidArgumentError
+        m.reply("Неверный код языка")
+      end
 
     end
   end
@@ -445,7 +480,7 @@ k = Cinch::Bot.new do
     end
   end
 
-  on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), праздники/i) do |m|
+  on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*праздники/i) do |m|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       m.safe_reply praz.map { |x| x.ubernation_days }
     end
@@ -464,18 +499,23 @@ k = Cinch::Bot.new do
     end
   end
 
-  on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), когда (.+)\?/i) do |m, _n|
+  on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*когда (.+)\?/i) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
-
-      if $no_highlight_nicks.include?(m.user.nick)
-
-        m.reply "#{m.user.nick.dup.insert(1, '‍')}, #{@otv.sample.ubernation_days}"
+      msg =  "когда "+n.strip
+      m.safe_reply(msg.ask_deeppavlov("when").ubernation_days)
+    end
+  end
+  
+  on(:message, /^(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*(.+)\?+$/i) do |m, n|
+    unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
+      msg =  n.strip
+      if ( msg.match?(/когда/i) || msg.match?(/ ли /i) ||  msg.match?(/ или /i) || msg.match?(/^а/i))
       else
-        m.reply "#{m.user.nick}, #{@otv.sample.ubernation_days}"
+        m.safe_reply(msg.ask_deeppavlov.ubernation_days)
       end
     end
   end
-
+  
   on(:message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s* найди (.+)/i) do |m, n|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if (user = User(n.strip)).unknown?
@@ -722,8 +762,9 @@ k = Cinch::Bot.new do
           a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
 
           a.get("https://duckduckgo.com/html/?q=#{query}")
-          link_check = URI.decode(a.page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1])
-          original_link = a.page.search('.results .web-result .result__a')[0]['href'].match(/&uddg=(.+)/)[1]
+          link_check = URI.decode(a.page.search('.results .web-result .result__a')[0]['href'])
+          original_link=a.page.search('.results .web-result .result__a')[0]['href']
+
 
           result_url = if link_check.length > 100
                          result_url = '[' + original_link.ukorachivatel + '] ' + link_check
@@ -748,15 +789,14 @@ k = Cinch::Bot.new do
           a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
 
           a.get("https://duckduckgo.com/html/?q=#{query}")
-
-          link_check = URI.decode(a.page.search('.result__a')[0][:href])
-          original_link = a.page.search('.result__a')[0][:href]
+          link_check = URI.decode(a.page.search('.results .web-result .result__a')[0]['href'])
+          original_link=a.page.search('.results .web-result .result__a')[0]['href']
           result_url = if link_check.length > 100
                          result_url = '[' + original_link.ukorachivatel + '] ' + link_check
                        else
                          link_check
                        end
-          result_text = a.page.search('.result__a')[0].text
+          result_text = a.page.search('.results .web-result .result__a')[0].text
           result = result_url + ' - ' + result_text.ubernation_days
           m.reply result
         end
@@ -775,15 +815,15 @@ k = Cinch::Bot.new do
         a.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.3282.39 Safari/537.36 kons'
 
         page = a.get("https://duckduckgo.com/html/?q=#{query}")
-        link_check = URI.decode(a.page.search('.result__a')[0][:href])
-        original_link = a.page.search('.result__a')[0][:href]
+        link_check = URI.decode(a.page.search('.results .web-result .result__a')[0]['href'])
+        original_link=a.page.search('.results .web-result .result__a')[0]['href']
         result_url = if link_check.length > 100
                        result_url = '[' + original_link.ukorachivatel + '] ' + link_check
                      # link_check
                      else
                        link_check
                      end
-        result_text = a.page.search('.result__a')[0].text
+        result_text = a.page.search('.results .web-result .result__a')[0].text
         result = result_url + ' - ' + result_text.ubernation_days
         m.reply result
       end
@@ -792,10 +832,129 @@ k = Cinch::Bot.new do
 
   on :message, /^>>/ do |m, _n|
     if @eval_allowed_users.include?(m.user.host)
+      begin
+        cmd = m.message.match(/>>(.+)/)[1]
+        result = eval(cmd.strip)
+        result.to_s.split("\n").length > 4 || result.to_s.length > 846 ? m.reply('>>>ERR: result is too long (>4 lines or >846 characters)') : m.reply(">>> #{result}")
+      rescue
+        if ( m.message.match?(/>>>/i))
+          msg =  m.message.match(/>>>(.+)/)[1].strip
+          uri = URI('https://models.dobro.ai/gpt2/medium/')
+          n = Net::HTTP.new("models.dobro.ai", 443)
+          n.use_ssl = true
+          
+          req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+          req.body = {prompt: msg, length: 35, num_samples: 5}.to_json
+          res = n.start do |http|
+            http.request(req)
+          end
+          samples =  JSON.parse(res.body)
+          better_replies = samples['replies'].select{|reply| !reply.chomp('.').match(/\./)}
+          if (better_replies.count()>0)
+            if (better_replies.count()>1)
+             best_replies = better_replies.select{|reply| !reply.chomp('.').match(/[a-zA-Z\]\[\(\)0-9]/)}
+              if (best_replies.count()>0)
+                our_reply= msg+best_replies.max_by(&:length)
+              else
+                our_reply= msg+better_replies.min_by(&:length)
+              end
+            else
+              our_reply= msg+better_replies.min_by(&:length)
+            end
+          else
+            our_reply= msg+samples['replies'].min_by(&:length)
+          end
+        else
+          m.reply("Использую нейросеть без GPU, ждите результата, для показа чужой (быстрой) нейросети (с говёными результатами) используйте префикс >>>")
+          msg =  m.message.match(/>>(.+)/)[1].strip
+          uri = URI('http://dopolnyator:8000/pelevin/')
+          n = Net::HTTP.new("dopolnyator", 8000)
+          n.read_timeout = 600
+          n.write_timeout = 600
+          n.use_ssl = false  
+          req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+          req.body = {prompt: msg, length: 35, num_samples: 3}.to_json  
+          res = n.start do |http|
+              http.request(req)
+          end
+          samples =  JSON.parse(res.body)
+          better_replies = samples['replies'].select{|reply| (reply[-1]=='.')}
+          if (better_replies.count()>0)
+            if (better_replies.count()>1)
+             best_replies = better_replies.select{|reply| !reply.chomp('.').match(/[a-zA-Z\]\[\(\)0-9]/)}
+              if (best_replies.count()>0)
+                our_reply= msg+best_replies.max_by(&:length)
+              else
+                our_reply= msg+better_replies.max_by(&:length)
+              end
+            else
+              our_reply= msg+better_replies.max_by(&:length)
+            end
+          else
+            our_reply= msg+samples['replies'].max_by(&:length)
+          end
+        end
+        m.safe_reply(our_reply.ubernation_days)
+      end
+    else
+      if (m.message.match?(/>>>/i))
+        msg = m.message.match(/>>>(.+)/)[1]
+        uri = URI('https://models.dobro.ai/gpt2/medium/')
+        n = Net::HTTP.new("models.dobro.ai", 443)
+        n.use_ssl = true
+        req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+        req.body = {prompt: msg, length: 35, num_samples: 5}.to_json
+        res = n.start do |http|
+          http.request(req)
+        end
+        samples =  JSON.parse(res.body)
+        better_replies = samples['replies'].select{|reply| !reply.chomp('.').match(/\./)}
+        if (better_replies.count()>0)
+          if (better_replies.count()>1)
+           best_replies = better_replies.select{|reply| !reply.chomp('.').match(/[a-zA-Z\]\[\(\)0-9]/)}
+            if (best_replies.count()>0)
+              our_reply= msg+best_replies.max_by(&:length)
+            else
+              our_reply= msg+better_replies.min_by(&:length)
+            end
+          else
+            our_reply= msg+better_replies.min_by(&:length)
+          end
+        else
+          our_reply= msg+samples['replies'].min_by(&:length)
+        end
+      else
+        m.safe_reply("Использую нейросеть без GPU, ждите результата, для показа чужой (быстрой) нейросети (с говёными результатами) используйте префикс >>>")
+        msg = m.message.match(/>>(.+)/)[1]
+        uri = URI('http://dopolnyator:8000/pelevin/')
+        n = Net::HTTP.new("dopolnyator", 8000)
+        n.use_ssl = false
+        n.read_timeout = 600
+        n.write_timeout = 600
+        req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+        req.body = {prompt: msg, length: 35, num_samples: 3}.to_json  
+        res = n.start do |http|
+          http.request(req)
+        end
+        samples =  JSON.parse(res.body)
+        better_replies = samples['replies'].select{|reply| (reply[-1]=='.')}
+        if (better_replies.count()>0)
+          if (better_replies.count()>1)
+           best_replies = better_replies.select{|reply| !reply.chomp('.').match(/[a-zA-Z\]\[\(\)0-9]/)}
+            if (best_replies.count()>0)
+              our_reply= msg+best_replies.max_by(&:length)
+            else
+              our_reply= msg+better_replies.max_by(&:length)
+            end
+          else
+            our_reply= msg+better_replies.max_by(&:length)
+          end
+        else
+          our_reply= msg+samples['replies'].max_by(&:length)
+        end
+      end
 
-      cmd = m.message.match(/>>(.+)/)[1]
-      result = eval(cmd.strip)
-      result.to_s.split("\n").length > 4 || result.to_s.length > 846 ? m.reply('>>>ERR: result is too long (>4 lines or >846 characters)') : m.reply(">>> #{result}")
+      m.safe_reply(our_reply.ubernation_days)
     end
   end
 
@@ -1004,7 +1163,7 @@ k = Cinch::Bot.new do
     end
   end
 
-  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), а (.+)\?[^\s]*/i do |m, a1|
+  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*а (.+)\?[^\s]*/i do |m, a1|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || a1.match?(/(^ ?| )или( | ?$)/) || a1.match?(/(^ ?| )ли( | ?$)/)
       @check = Random.new(Digest::MD5.hexdigest(Time.now.strftime('%d/%m/%Y') + m.user.nick + m.message).to_i(16).to_f).rand > 0.5
       if @check
@@ -1028,7 +1187,7 @@ k = Cinch::Bot.new do
     end
   end
 
-  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), а (.+) или (.+)\?[^\s]*/i do |m, a1, a2|
+  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*а (.+) или (.+)\?[^\s]*/i do |m, a1, a2|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick) || a1.match?(/(^ ?| )ли( | ?$)/) || a2.match?(/(^ ?| )ли( | ?$)/)
       if Random.new(Digest::MD5.hexdigest(Time.now.strftime('%d/%m/%Y') + m.user.nick + m.message).to_i(16).to_f).rand > 0.5
         nash_variant = a1
@@ -1058,7 +1217,7 @@ k = Cinch::Bot.new do
     end
   end
 
-  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка),.+(?:выбери|выбрать|посоветуй|дай совет).+:(.+(?:(,|или)).+)+(\?|\!|\.)[^\s]*/i do |m, a1|
+  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*.+(?:выбери|выбрать|посоветуй|дай совет).+:(.+(?:(,|или)).+)+(\?|\!|\.)[^\s]*/i do |m, a1|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       a1.gsub!(' или ', ',')
       our_answer_array = []
@@ -1265,119 +1424,130 @@ k = Cinch::Bot.new do
           length = ActionView::Base.new.number_to_human_size(FastImage.new(resp.uri.to_s).content_length).gsub(/\bКБ\b/, 'КиБ').gsub(/\bМБ\b/, 'МиБ')
           title << "Изображение (#{length}, #{dims[0]}×#{dims[1]}, #{type})"
         end
-        m.safe_reply title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').strip.ubernation_days
+        m.safe_reply title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').strip.gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»').strip.ubernation_days
       else
         agent.get url.to_s
         title = agent.page.search('title')[0].text.strip.gsub(/ - YouTube/, '').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
-        if agent.page.uri.to_s.match?(%r{youtube\.com/watch}) || agent.page.uri.to_s.match?(/youtu\.be/)
-            
-          youtube_data=JSON.parse(`youtube-dl  --flat-playlist --skip-download -J "#{url.to_s   }"`)
 
-          if (youtube_data["upload_date"].to_i>0)
-            title = Date.strptime(youtube_data["upload_date"].to_s, "%Y%m%d").strftime('%d.%m.%Y')+ " — " + youtube_data["uploader"].to_s+" — "+youtube_data["title"].to_s + " ("+youtube_data["average_rating"].to_f.round(1).to_s+"/5)"
+        if agent.page.uri.to_s.match?(%r{youtube\.com/watch}) || agent.page.uri.to_s.match?(/youtu\.be/)
+          youtube_data=Hash.new
+          youtube_dl_failed = false
+          begin
+            youtube_data=JSON.parse(`youtube-dl  --youtube-skip-dash-manifest --flat-playlist --skip-download -J "#{url.to_s}"`)
+          rescue StandardError
+            youtube_dl_failed = true
+          end
+          
+          if (youtube_data.has_key?("upload_date"))
+            title =youtube_data["title"].to_s
           else
             title = youtube_data["uploader"].to_s+" — "+youtube_data["title"].to_s + " ("+youtube_data["average_rating"].to_f.round(1).to_s+"/5)"
           end
           
-          if (youtube_data["duration"].to_i>0)
+          if title.empty? || title == 'YouTube' || title == " —  — (0.0/5)" || title == " — (0.0/5)" || title == "— (0.0/5)" || title == "— — (0.0/5)" || youtube_dl_failed 
+            title = agent.page.search('meta[name="title"]')[0][:content].strip.gsub(/ - YouTube/, '').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
+          end
+          
+          if (youtube_data.has_key?("duration") && youtube_data["duration"].to_f>0)
             title = title + " — " + distance_of_time_in_words(youtube_data["duration"].to_i)
           end
           
-          if title.empty? || title == 'YouTube' || title == " —  — (0.0/5)" || title == " — (0.0/5)"
-            title = agent.page.search('meta[name="title"]')[0][:content].strip.gsub(/ - YouTube/, '').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
-          end
-
-          if ((youtube_data["is_live"].to_s!="true") && (youtube_data["view_count"].to_i >0))
+          if (youtube_data.has_key?("average_rating") && youtube_data["average_rating"].to_f>0)
+            average_rating = ", "+"оценка".ubernation_days+" "+youtube_data["average_rating"].to_f.round(1).to_s+"/5"
+          else
+            average_rating = ""
+          end 
+          
+          if (youtube_data.has_key?("upload_date"))
+            upload_date = " ["+youtube_data["uploader"].to_s.ubernation_days+"]" + ' ' + Date.strptime(youtube_data["upload_date"].to_s, "%Y%m%d").strftime('%d.%m.%Y')
+          else
+            upload_date =""
+          end 
+          
+          if ((youtube_data.has_key?("is_live")) && (youtube_data.has_key?("view_count")) && (youtube_data["is_live"].to_s!="true") && (youtube_data["view_count"].to_i >0))
             view_count = youtube_data["view_count"].to_i
             watcher_names = %w[просмотров просмотр просмотра]
           else
             view_count_tmp = agent.page.search('.watch-view-count').text.gsub(/ views/, '')
-            view_count = view_count_tmp.tr('^0-9', '').to_i if view_count_tmp.length > 0
+            if view_count_tmp.length > 0
+              view_count = view_count_tmp.tr('^0-9', '').to_i
+            end
             watcher_live_names = %w[зрителей зритель зрителя]
             watcher_names = %w[просмотров просмотр просмотра]
             
-            unless view_count.is_a? Integer
+            unless (view_count.is_a? Integer)
               view_count_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer":{"viewCount":{"simpleText":"([0-9\.,\ ]+) (?:views|Aufrufe)"}/im)
-              view_count = view_count_tmp[0][0].tr('^0-9', '').to_i if view_count_tmp.length > 0
+              if view_count_tmp.length > 0
+                view_count = view_count_tmp[0][0].tr('^0-9', '').to_i
+              end
             end
             
-            unless view_count.is_a? Integer
+            unless (view_count.is_a? Integer)
               view_count_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer\\":{\\"viewCount\\":{\\"simpleText\\":\\"([0-9\.,\ ]+) /im)
-              view_count = view_count_tmp[0][0].tr('^0-9', '').to_i if view_count_tmp.length > 0
+              if view_count_tmp.length > 0
+                view_count = view_count_tmp[0][0].tr('^0-9', '').to_i
+              end
             end
           end
-
-
+          
           if !(view_count.is_a? Integer)
             view_count_num_tmp = agent.page.search('script').text.scan(/viewCount\\":\{\\"runs\\":\[\{\\"text\\":\\"(?:Aktuell )?([0-9\.,\ ]+) (?:watching now|Zuschauer)\\"\}/im)
-
-            view_count_num = view_count_num_tmp[0][0].tr('^0-9', '').to_i if view_count_num_tmp.length > 0
-
-            unless view_count_num.is_a? Integer
-              view_count_num_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer":{"viewCount":{"runs":\[{"text":"(?:[^\ 0-9]+ )?([0-9\.,\ ]+) /im)
-              view_count_num = view_count_num_tmp[0][0].tr('^0-9', '').to_i if view_count_num_tmp.length > 0
+          
+            if view_count_num_tmp.length > 0
+              view_count_num = view_count_num_tmp[0][0].tr('^0-9', '').to_i
             end
-
+          
+            unless (view_count_num.is_a? Integer)
+              view_count_num_tmp = agent.page.search('script').text.scan(/videoViewCountRenderer":{"viewCount":{"runs":\[{"text":"(?:[^\ 0-9]+ )?([0-9\.,\ ]+) /im)
+               if view_count_num_tmp.length > 0
+                 view_count_num = view_count_num_tmp[0][0].tr('^0-9', '').to_i
+               end
+            end
             w_index = view_count_num % 100
-
-            a_index = if w_index >= 11 && w_index <= 14
-                        0
-                      else
-                        if (w_index % 10) < 5
-                          if (w_index % 10) > 2
-                            2
-                          else
-                            w_index % 10
-                                    end
-                        else
-                          0
-                                  end
-
-                      end
-
+            if w_index >= 11 && w_index <= 14
+              a_index = 0
+            else
+              if (w_index % 10) < 5
+                if (w_index % 10) > 2
+                  a_index = 2
+                else
+                  a_index = w_index % 10
+                end
+              else
+                a_index = 0
+              end
+            end
             view_count_str =  number_with_delimiter(view_count_num, delimiter: ',')
-            watcher_live_name = watcher_live_names[a_index]
-
-            title = title.ubernation_days + ' ' + "(#{view_count_str} #{watcher_live_name})".ubernation_days
-
+            watcher_live_name = watcher_live_names[a_index].ubernation_days
+            title = title.ubernation_days + ' ' + "(#{view_count_str} #{watcher_live_name}#{average_rating})#{upload_date}"
           else
             view_count_num = view_count
-
             w_index = view_count_num % 100
-
-            a_index = if w_index >= 11 && w_index <= 14
-                        0
-                      else
-                        if (w_index % 10) < 5
-                          if (w_index % 10) > 2
-                            2
-                          else
-                            w_index % 10
-                                    end
-                        else
-                          0
-                                  end
-
-                      end
-
+            if w_index >= 11 && w_index <= 14
+              a_index = 0
+            else
+              if (w_index % 10) < 5
+                if (w_index % 10) > 2
+                  a_index = 2
+                else
+                  a_index = w_index % 10
+                end
+              else
+                a_index = 0
+              end
+            end
             view_count_str = number_with_delimiter(view_count_num, delimiter: ',')
-
-            watcher_name = watcher_names[a_index]
-
-            title = title.ubernation_days + ' ' + "(#{view_count_str} #{watcher_name})".ubernation_days
+            watcher_name = watcher_names[a_index].ubernation_days
+            title = title.ubernation_days + ' ' + "(#{view_count_str} #{watcher_name}#{average_rating})#{upload_date}"
           end
-
         end
 
-        if agent.page.uri.to_s.match?(/github\.com.*issues.*/)
+        if agent.page.uri.to_s.match?(%r{github\.com.*issues.*})
           # https://docs.github.com/en/rest/reference/issues#get-an-issue
           # Сюда смотреть когда регекс сломается, пример https://api.github.com/repos/matrix-org/matrix-doc/issues/1882
           problem_status = agent.page.search('.TableObject-item').text.gsub(/\n/, ' ').gsub(/\s+/, ' ').gsub(/\s+([,\.!])/, '\1').gsub(%r{([,\.!])(?![\s\d]+)(?![$/])}, '\1').gsub(/(\d+),(\d+)/, '\1.\2').gsub(/(\d+)\*(\d+)/i, '\1×\2').gsub(/(\d+)Х(\d+)/i, '\1×\2').gsub(/(\d+)х(\d+)/i, '\1×\2').gsub(/(\d+)x(\d+)/i, '\1×\2').gsub(/"([\p{Cyrillic}|\s|0-9|×]*)"/m, '«\1»').gsub(/« /, '«').gsub(/ »/, '»')
-
           title = title.ubernation_days + ' ' + "(Status:#{problem_status})".ubernation_days
-
         end
-
         safe_title = title.gsub(/[^[:print:]]/i, ' ').gsub(/\r\n/, ' ').tr("\n", ' ').gsub(/\s+/, ' ').strip
         if safe_title.length > 400
           m.safe_reply safe_title.slice(0, 400)
@@ -1437,43 +1607,35 @@ k = Cinch::Bot.new do
     end
   end
 
-  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка), скажи (\S+) (.+)/ do |m, n, l|
+  on :message, /(?:Konsolech|Консол)(?:ь|еч|)(?:ka|ка)(?:,|\s+)\s*скажи (\S+) (.+)/ do |m, n, l|
     unless @ignored_users.include?(m.user.host) || @ignored_nicks.include?(m.user.nick)
       if n.match?(/\A[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*\z/i)
         @tells ||= Hash.new { |h, k| h[k] = [] }
-        if m.channel.users.map { |e| e[0].nick }.include?(n)
+        if m.channel.users.map {|e| e[0].nick }.include?(n)
           if $no_highlight_nicks.include?(m.user.nick)
-
-            m.reply("#{m.user.nick.dup.insert(1, '‍')}, в шары долбишься?".ubernation_days)
-
+            m.reply("#{m.user.nick.dup.insert(1, '�')}, в шары долбишься?".ubernation_days)
           else
             m.reply("#{m.user.nick}, в шары долбишься?".ubernation_days)
           end
-
         else
           if @tells[n].length >= 5
             if $no_highlight_nicks.include?(m.user.nick)
-
-              m.reply("#{m.user.nick.dup.insert(1, '‍')}, лимит сообщений (5) достигнут.".ubernation_days)
-
+              m.reply("#{m.user.nick.dup.insert(1, '�')}, лимит сообщений (5) достигнут.".ubernation_days)
             else
               m.reply("#{m.user.nick}, лимит сообщений (5) достигнут.".ubernation_days)
             end
-
           else
             @tells[n] << l
             m.channel.action 'скажет!'
-            File.open('tells.txt', 'w') { |f| f.puts @tells.to_json }
+            File.open('tells.txt', 'w') {|f| f.puts @tells.to_json }
           end
         end
       else
         if $no_highlight_nicks.include?(m.user.nick)
-
-          m.reply("#{m.user.nick.dup.insert(1, '‍')} у тебя хуйня вместо ника.".ubernation_days)
+          m.reply("#{m.user.nick.dup.insert(1, '�')} у тебя хуйня вместо ника.".ubernation_days)
         else
           m.reply("#{m.user.nick} у тебя хуйня вместо ника.".ubernation_days)
         end
-
       end
     end
   end

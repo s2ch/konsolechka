@@ -18,7 +18,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::CompressionTypes::Order::
 
 RUN sed -i -e 's/# ru_RU.UTF-8 UTF-8/ru_RU.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
-    update-locale LANG=ru_RU.UTF-8
+    update-locale LANG=ru_RU.UTF-8 && \
+    ln -snf /usr/share/zoneinfo/Europe/Moscow /etc/localtime && \
+    echo Europe/Moscow > /etc/timezone
 
 
 ENV LANG ru_RU.UTF-8
